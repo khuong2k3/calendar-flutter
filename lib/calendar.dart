@@ -25,7 +25,7 @@ class _CalendarState extends State<Calendar> {
     int startDay = (now.day - weekday) % 7;
 
     return Container(
-      child: month(50, MONTHS[now.month - 1], startDay, now.day),
+      child: month(40, MONTHS[now.month - 1], startDay, now.day),
     );
   }
 }
@@ -34,7 +34,10 @@ Widget month(int cellSize, int day, int start, int today) {
   double height = (((day + start) / 7.0).ceil() + 1) * cellSize.toDouble();
 
   return Container(
-    decoration: BoxDecoration(color: Colors.blue),
+    decoration: BoxDecoration(
+      color: Colors.blue,
+      borderRadius: BorderRadius.all(Radius.circular(5)),
+    ),
     width: cellSize * 7,
     height: height,
     child: GridView.builder(
@@ -53,10 +56,13 @@ Widget month(int cellSize, int day, int start, int today) {
         }
 
         if (index - start - 6 == today) {
-          return Card(color: Colors.red, child: Center(child: Text('${index - start - 6}')));
+          return Card(
+            color: Colors.red,
+            child: Center(child: Text('${index - start - 6}')),
+          );
         }
 
-        return Card(child: Center(child: Text('${index - start - 6}')));
+        return Card(borderOnForeground: false, child: Center(child: Text('${index - start - 6}')));
       },
     ),
   );
