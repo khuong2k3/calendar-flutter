@@ -1,4 +1,8 @@
+import 'dart:math';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_app/helper.dart';
 
 List<String> DAYS = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
 int MAX_RENDER = 150;
@@ -11,62 +15,16 @@ class Calenderbig extends StatefulWidget {
 }
 
 class _CalendarBigState extends State<Calenderbig> {
-  final GlobalKey _key = GlobalKey();
-  DateTime startRender = DateTime.now();
-  DateTime endRender = DateTime.now().add(Duration(days: 50));
-  ScrollController controller = ScrollController(initialScrollOffset: 0.001, keepScrollOffset: false);
-  Size _currentSize = Size(0, 0);
-
-  void _onScroll() {
-    double currentPosition = controller.offset;
-
-    if (controller.position.atEdge) {
-      setState(() {
-        if (currentPosition == 0.0) {
-          startRender = startRender.subtract(Duration(days: 7));
-          controller.jumpTo(0.001);
-          if (endRender.difference(startRender) > Duration(days: MAX_RENDER)) {
-            endRender.subtract(Duration(days: 7));
-          }
-        } else {
-          endRender = endRender.add(Duration(days: 7));
-          if (endRender.difference(startRender) > Duration(days: MAX_RENDER)) {
-            startRender.add(Duration(days: 7));
-          }
-        }
-      });
-    }
-  }
-
-  void _onChangeSize() {
-    final RenderBox? renderBox = _key.currentContext?.findRenderObject() as RenderBox?;
-
-    if (renderBox != null && renderBox.hasSize) {
-      if (renderBox.size != _currentSize) {
-        setState(() {
-          _currentSize = renderBox.size;
-        });
-      }
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onChangeSize();
-    });
-  }
+  DateTime startRender = startOfDay(DateTime.now());
+  DateTime endRender = startOfDay(DateTime.now()).add(Duration(days: 70));
 
   @override
   void initState() {
     super.initState();
-
-    controller.addListener(_onScroll);
   }
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onChangeSize();
-    });
-
     return Expanded(
       child: Column(
         children: [
@@ -85,10 +43,10 @@ class _CalendarBigState extends State<Calenderbig> {
           ),
           Flexible(
             flex: 1,
-            child: SingleChildScrollView(
-              key: _key,
-              controller: controller,
-              child: CalenderGrid(startDate: startRender, endDate: endRender, currentSize: _currentSize,),
+            child: CalenderGrid(
+              startDate: startRender,
+              endDate: endRender,
+              events: [],
             ),
           ),
         ],
@@ -97,87 +55,171 @@ class _CalendarBigState extends State<Calenderbig> {
   }
 }
 
-class CalenderGrid extends StatelessWidget {
+class CalenderGrid extends StatefulWidget {
   final DateTime startDate;
   final DateTime endDate;
-  final Size currentSize;
+  final List<Event> events;
 
-  const CalenderGrid({super.key, required this.startDate, required this.endDate, required this.currentSize});
+  const CalenderGrid({
+    super.key,
+    required this.startDate,
+    required this.endDate,
+    required this.events,
+  });
+
+  State<CalenderGrid> createState() => _CalenderGrid();
+}
+
+class _CalenderGrid extends State<CalenderGrid> {
+  final GlobalKey _key = GlobalKey();
+  double _currentWidth = 0.0;
+  Map<DateTime, List<Event>> events = {};
+  ScrollController controller = ScrollController(
+    initialScrollOffset: 0.001,
+    keepScrollOffset: false,
+  );
+
+  late DateTime startRender;
+  late DateTime endRender;
+
+  void _onScroll() {
+    double currentPosition = controller.offset;
+
+    if (controller.position.atEdge) {
+      setState(() {
+        if (currentPosition == 0.0) {
+          startRender = startRender.subtract(Duration(days: 7));
+          if (endRender.difference(startRender) > Duration(days: MAX_RENDER)) {
+            endRender.subtract(Duration(days: 7));
+          }
+        } else {
+          endRender = endRender.add(Duration(days: 7));
+          if (endRender.difference(startRender) > Duration(days: MAX_RENDER)) {
+            startRender.add(Duration(days: 7));
+          }
+        }
+      });
+    }
+
+    double cellSize = _currentWidth / 7;
+    double newPosition = (currentPosition / cellSize).round() * cellSize;
+
+    controller.jumpTo(max(0.001, newPosition));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    for (Event event in widget.events) {
+      DateTime date = startOfDay(event.date);
+      List<Event>? eventsList = events[date];
+      if (eventsList != null) {
+        eventsList.add(event);
+      } else {
+        events[date] = [event];
+      }
+    }
+    setState(() {
+      startRender = widget.startDate;
+      endRender = widget.endDate;
+    });
+    controller.addListener(_onScroll);
+  }
+
+  void _onChangeSize() {
+    final RenderBox? renderBox =
+        _key.currentContext?.findRenderObject() as RenderBox?;
+
+    if (renderBox != null && renderBox.hasSize) {
+      if (renderBox.size.width != _currentWidth) {
+        setState(() {
+          _currentWidth = renderBox.size.width;
+        });
+      }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onChangeSize();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    DateTime weekStart = startDate.subtract(Duration(days: startDate.weekday));
-    DateTime weekEnd = endDate.add(Duration(days: 7 - endDate.weekday));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onChangeSize();
+    });
+
+    DateTime weekStart = startRender.subtract(
+      Duration(days: startRender.weekday),
+    );
+    DateTime weekEnd = endRender.add(
+      Duration(days: 7 - endRender.weekday),
+    );
+
     int dayDiff = weekEnd.difference(weekStart).inDays;
-    DateTime today = DateTime.now();
+    DateTime today = startOfDay(DateTime.now());
 
-    return GridView.builder(
-      shrinkWrap: true,
-      itemCount: dayDiff,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 7,
-        crossAxisSpacing: 1.0,
-        mainAxisSpacing: 1.0,
-      ),
-      itemBuilder: (context, index) {
-        DateTime itemDay = weekStart.add(Duration(days: index));
+    return SingleChildScrollView(
+      controller: controller,
+      child: GridView.builder(
+        key: _key,
+        shrinkWrap: true,
+        itemCount: dayDiff,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 7,
+          crossAxisSpacing: 1.0,
+          mainAxisSpacing: 1.0,
+        ),
+        itemBuilder: (context, index) {
+          DateTime itemDay = weekStart.add(Duration(days: index));
 
-        if (itemDay.day == today.day &&
-            itemDay.month == today.month &&
-            itemDay.year == today.year) {
+          if (today == itemDay) {
+            return Card(
+              color: Colors.red,
+              shadowColor: Colors.red,
+              child: Center(
+                child: Text('${weekStart.add(Duration(days: index)).day}'),
+              ),
+            );
+          }
+
           return Card(
-            color: Colors.red,
-            shadowColor: Colors.red,
             child: Center(
               child: Text('${weekStart.add(Duration(days: index)).day}'),
             ),
           );
-        }
-
-        return Card(
-          child: Center(
-            child: Text('${weekStart.add(Duration(days: index)).day}'),
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 }
 
-// Widget renderDays(DateTime startDate, DateTime endDate) {
-//   DateTime weekStart = startDate.subtract(Duration(days: startDate.weekday));
-//   DateTime weekEnd = endDate.add(Duration(days: 7 - endDate.weekday));
-//   int dayDiff = weekEnd.difference(weekStart).inDays;
-//   DateTime today = DateTime.now();
-//
-//   return GridView.builder(
-//     shrinkWrap: true,
-//     itemCount: dayDiff,
-//     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-//       crossAxisCount: 7,
-//       crossAxisSpacing: 1.0,
-//       mainAxisSpacing: 1.0,
-//     ),
-//     itemBuilder: (context, index) {
-//       DateTime itemDay = weekStart.add(Duration(days: index));
-//
-//       if (itemDay.day == today.day &&
-//           itemDay.month == today.month &&
-//           itemDay.year == today.year) {
-//         return Card(
-//           color: Colors.red,
-//           shadowColor: Colors.red,
-//           child: Center(
-//             child: Text('${weekStart.add(Duration(days: index)).day}'),
-//           ),
-//         );
-//       }
-//
-//       return Card(
-//         child: Center(
-//           child: Text('${weekStart.add(Duration(days: index)).day}'),
-//         ),
-//       );
-//     },
-//   );
-// }
+class Event {
+  String name;
+  DateTime date;
+  EventType eventType;
+
+  Event({required this.name, required this.date, required this.eventType});
+}
+
+enum EventType { holiday, user }
+
+class EventTags extends StatelessWidget {
+  final List<Event> events;
+
+  const EventTags({super.key, required this.events});
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> tags = [];
+    if (events.isNotEmpty) {
+      tags.add(Text(events[0].name));
+    }
+
+    if (events.length > 1) {
+      tags.add(Text('+${events.length - 1}'));
+    }
+
+    return Row(children: tags);
+  }
+}
