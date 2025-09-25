@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 10.0,
-            children: [ Calendar(), Calenderbig()],
+            children: [ Calendar(), Calenderbig(key: Key("big-calendar"))],
           ),
         bottomNavigationBar: NavigationBar(
           destinations: [
