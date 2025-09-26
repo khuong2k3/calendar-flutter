@@ -11,5 +11,16 @@ class GlobalMouseEvent {
   GlobalMouseEvent(this.position, this.kind, this.buttons);
 }
 
+class PopupEvent {
+  final DateTime dateTime;
+
+  PopupEvent(this.dateTime);
+}
+
+
+final globalPopupEventNotifier = ValueNotifier<PopupEvent?>(null);
+
 // Notifier to hold the latest event
 final globalEventNotifier = ValueNotifier<OverlayPortalController?>(null);
+
+

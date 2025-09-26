@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_app/event_manager.dart';
@@ -20,10 +19,6 @@ class _CalendarBigState extends State<Calenderbig> {
   DateTime startRender = startOfDay(DateTime.now());
   DateTime endRender = startOfDay(DateTime.now()).add(Duration(days: 70));
 
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +31,8 @@ class _CalendarBigState extends State<Calenderbig> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              crossAxisSpacing: 1.0,
-              mainAxisSpacing: 1.0,
+              crossAxisSpacing: 0.0,
+              mainAxisSpacing: 0.0,
             ),
             itemBuilder: (context, index) {
               return Card(child: Center(child: Text(DAYS[index])));
@@ -74,6 +69,10 @@ class CalenderGrid extends StatefulWidget {
 
 class _CalenderGrid extends State<CalenderGrid> {
   final GlobalKey _key = GlobalKey();
+  final GlobalKey _keySc = GlobalKey();
+  Size? scrollViewSize;
+
+
   double _currentWidth = 0.0;
   Map<DateTime, List<Event>> events = {};
   ScrollController controller = ScrollController(
@@ -125,6 +124,12 @@ class _CalenderGrid extends State<CalenderGrid> {
       startRender = widget.startDate;
       endRender = widget.endDate;
     });
+
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   setState(() {
+    //     scrollViewSize = (_keySc.currentContext?.findRenderObject() as RenderBox?)?.size;
+    //   });
+    // });
     controller.addListener(_onScroll);
   }
 
@@ -136,6 +141,7 @@ class _CalenderGrid extends State<CalenderGrid> {
       if (renderBox.size.width != _currentWidth) {
         setState(() {
           _currentWidth = renderBox.size.width;
+          scrollViewSize = (_keySc.currentContext?.findRenderObject() as RenderBox?)?.size;
         });
       }
     }
@@ -145,7 +151,39 @@ class _CalenderGrid extends State<CalenderGrid> {
     });
   }
 
-  OverlayPortalController? _prevOverlay;
+  // OverlayPortalController? _prevOverlay;
+  final OverlayPortalController _overlayCtrl = OverlayPortalController();
+  final _layerLink = LayerLink();
+  Offset _popupOffset = Offset(0, 0);
+  bool _open = false;
+
+  Widget _buildOverlay(BuildContext context) {
+
+    return TooltipWrapper(
+      globalOffset: _popupOffset,
+      boundingBox: scrollViewSize,
+      layerLink: _layerLink,
+      child: globalPopupEventNotifier.value != null
+          ? EditDate(
+              dateTime: globalPopupEventNotifier.value?.dateTime as DateTime,
+              onOk: () {
+                _overlayCtrl.hide();
+                setState(() {
+                  scrollPhysics = null;
+                });
+              },
+              onExit: () {
+                _overlayCtrl.hide();
+                setState(() {
+                  scrollPhysics = null;
+                });
+              },
+            )
+          : SizedBox.shrink(),
+    );
+  }
+
+  ScrollPhysics? scrollPhysics;
 
   @override
   Widget build(BuildContext context) {
@@ -161,42 +199,57 @@ class _CalenderGrid extends State<CalenderGrid> {
     int dayDiff = weekEnd.difference(weekStart).inDays;
     DateTime today = startOfDay(DateTime.now());
 
-    return SingleChildScrollView(
-      controller: controller,
-      child: Listener(
-        onPointerDown: (e) {
-          if (_prevOverlay != globalEventNotifier.value &&
-              globalEventNotifier.value != null) {
-            globalEventNotifier.value?.hide();
-          }
-          _prevOverlay = globalEventNotifier.value;
-        },
-        child: GridView.builder(
-          key: _key,
-          shrinkWrap: true,
-          itemCount: dayDiff,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            crossAxisSpacing: 1.0,
-            mainAxisSpacing: 1.0,
-          ),
-          itemBuilder: (context, index) {
-            DateTime itemDay = weekStart.add(Duration(days: index));
-            Color? cardColor;
-
-            if (today == itemDay) {
-              cardColor = Colors.red;
-            }
-
-            return MyTooltip(
-              arrowColor: Colors.cyan,
-              content: EditDate(),
-              child: Card(
-                color: cardColor,
-                child: Center(child: Text('${itemDay.day}')),
+    return Listener(
+      onPointerDown: (e) {
+        _popupOffset = e.localPosition;
+      },
+      child: CompositedTransformTarget(
+        link: _layerLink,
+        child: OverlayPortal(
+          controller: _overlayCtrl,
+          overlayChildBuilder: _buildOverlay,
+          child: SingleChildScrollView(
+            key: _keySc,
+            controller: controller,
+            physics: scrollPhysics,
+            child: GridView.builder(
+              key: _key,
+              shrinkWrap: true,
+              itemCount: dayDiff,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                crossAxisSpacing: 0.0,
+                mainAxisSpacing: 0.0,
               ),
-            );
-          },
+              itemBuilder: (context, index) {
+                DateTime itemDay = weekStart.add(Duration(days: index));
+                Color cardColor = Colors.black26;
+
+                if (today == itemDay) {
+                  cardColor = Colors.red;
+                }
+
+                return Container(
+                  decoration: BoxDecoration(
+                    boxShadow: [BoxShadow(color: cardColor)],
+                    border: BoxBorder.all(color: Colors.white, width: 1),
+                  ),
+                  // color: cardColor,
+                  child: InkWell(
+                    onTap: () {
+                      globalPopupEventNotifier.value = PopupEvent(itemDay);
+                      _overlayCtrl.show();
+                      setState(() {
+                        scrollPhysics = NeverScrollableScrollPhysics();
+                      });
+                      _open = !_open;
+                    },
+                    child: Center(child: Text('${itemDay.day}')),
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -234,17 +287,25 @@ class EventTags extends StatelessWidget {
 }
 
 class EditDate extends StatefulWidget {
+  final DateTime dateTime;
+  final void Function() onOk;
+  final void Function() onExit;
+
+  const EditDate({
+    required this.dateTime,
+    required this.onOk,
+    required this.onExit,
+  });
+
   @override
   State<EditDate> createState() => _EditDate();
 }
 
 class _EditDate extends State<EditDate> {
-
   @override
   Widget build(BuildContext context) {
-
     return Container(
-      width: 250,
+      width: 300,
       padding: EdgeInsetsGeometry.all(10.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(10.0)),
@@ -252,13 +313,23 @@ class _EditDate extends State<EditDate> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          Text(widget.dateTime.toString()),
           Text("Event Name:"),
           TextField(),
-          Text("Event Name:"),
-          TextField(),
+          Padding(
+            padding: EdgeInsets.all(5),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(onPressed: widget.onExit, child: Text("Cancel")),
+                FilledButton(onPressed: widget.onOk, child: Text("Ok")),
+              ],
+            ),
+          ),
         ],
-      )
+      ),
     );
   }
 }
