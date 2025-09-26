@@ -2,7 +2,9 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_app/event_manager.dart';
 import 'package:flutter_app/helper.dart';
+import 'package:flutter_app/tooltip.dart';
 
 List<String> DAYS = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
 int MAX_RENDER = 150;
@@ -143,6 +145,8 @@ class _CalenderGrid extends State<CalenderGrid> {
     });
   }
 
+  OverlayPortalController? _prevOverlay;
+
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -152,43 +156,48 @@ class _CalenderGrid extends State<CalenderGrid> {
     DateTime weekStart = startRender.subtract(
       Duration(days: startRender.weekday),
     );
-    DateTime weekEnd = endRender.add(
-      Duration(days: 7 - endRender.weekday),
-    );
+    DateTime weekEnd = endRender.add(Duration(days: 7 - endRender.weekday));
 
     int dayDiff = weekEnd.difference(weekStart).inDays;
     DateTime today = startOfDay(DateTime.now());
 
     return SingleChildScrollView(
       controller: controller,
-      child: GridView.builder(
-        key: _key,
-        shrinkWrap: true,
-        itemCount: dayDiff,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 7,
-          crossAxisSpacing: 1.0,
-          mainAxisSpacing: 1.0,
-        ),
-        itemBuilder: (context, index) {
-          DateTime itemDay = weekStart.add(Duration(days: index));
+      child: Listener(
+        onPointerDown: (e) {
+          if (_prevOverlay != globalEventNotifier.value &&
+              globalEventNotifier.value != null) {
+            globalEventNotifier.value?.hide();
+          }
+          _prevOverlay = globalEventNotifier.value;
+        },
+        child: GridView.builder(
+          key: _key,
+          shrinkWrap: true,
+          itemCount: dayDiff,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            crossAxisSpacing: 1.0,
+            mainAxisSpacing: 1.0,
+          ),
+          itemBuilder: (context, index) {
+            DateTime itemDay = weekStart.add(Duration(days: index));
+            Color? cardColor;
 
-          if (today == itemDay) {
-            return Card(
-              color: Colors.red,
-              shadowColor: Colors.red,
-              child: Center(
-                child: Text('${weekStart.add(Duration(days: index)).day}'),
+            if (today == itemDay) {
+              cardColor = Colors.red;
+            }
+
+            return MyTooltip(
+              arrowColor: Colors.cyan,
+              content: EditDate(),
+              child: Card(
+                color: cardColor,
+                child: Center(child: Text('${itemDay.day}')),
               ),
             );
-          }
-
-          return Card(
-            child: Center(
-              child: Text('${weekStart.add(Duration(days: index)).day}'),
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -221,5 +230,35 @@ class EventTags extends StatelessWidget {
     }
 
     return Row(children: tags);
+  }
+}
+
+class EditDate extends StatefulWidget {
+  @override
+  State<EditDate> createState() => _EditDate();
+}
+
+class _EditDate extends State<EditDate> {
+
+  @override
+  Widget build(BuildContext context) {
+
+    return Container(
+      width: 250,
+      padding: EdgeInsetsGeometry.all(10.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+        boxShadow: [BoxShadow(color: Colors.cyan)],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text("Event Name:"),
+          TextField(),
+          Text("Event Name:"),
+          TextField(),
+        ],
+      )
+    );
   }
 }
