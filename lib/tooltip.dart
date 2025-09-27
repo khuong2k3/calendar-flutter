@@ -138,7 +138,7 @@ class _TooltipWrapper extends State<TooltipWrapper> {
             offsetX = boundingBox.width - rightX;
           }
           if (newOffset.dy + size.height > boundingBox.height) {
-            offsetY = -size.height;
+            offsetY = -size.height - 2 * arrowHeight;
           }
           newOffset = newOffset.translate(offsetX, offsetY);
         }
@@ -182,7 +182,6 @@ class TooltipPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
 
-    // print(offset);
     if (alignment.y < 0) {}
     // Define the path for the background rectangle with a top-center arrow
     Path path = offset.dy < 0

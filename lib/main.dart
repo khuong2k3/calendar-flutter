@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/calendar.dart';
-import 'package:flutter_app/calenderBig.dart';
+import 'package:flutter_app/calenderbig.dart';
+import 'package:flutter_app/event_manager.dart';
 
 void main() {
   runApp(const MyApp());
@@ -50,12 +51,18 @@ class MyApp extends StatelessWidget {
           leading: Icon(Icons.login),
         ),
         drawer: Drawer(child: ListTile(title: Text("do thing"))),
-        body: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 10.0,
-            children: [ Calendar(), Calenderbig(key: Key("big-calendar"))],
-          ),
+        body: Listener(
+          onPointerDown: (e) {
+            globalMouseNotifier.value = e;
+          },
+          behavior: HitTestBehavior.translucent,
+          child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 10.0,
+              children: [ Calendar(), Calenderbig(key: Key("big-calendar"))],
+            ),
+        ),
         bottomNavigationBar: NavigationBar(
           destinations: [
             NavigationDestination(icon: Icon(Icons.home), label: "Home"),
