@@ -188,7 +188,7 @@ class _CalenderGrid extends State<CalenderGrid> {
         globalOffset: _popupOffset,
         boundingBox: scrollViewSize,
         layerLink: _layerLink,
-        paintColor: Colors.cyan,
+        paintColor: Theme.of(context).dividerColor,
         child: EditTag(
           event: popupEvent.event,
           onSave: (event) {
@@ -241,7 +241,7 @@ class _CalenderGrid extends State<CalenderGrid> {
 
   ScrollPhysics? scrollPhysics;
 
-  Widget _createTag(Event event) {
+  Widget _createTag(BuildContext context, Event event) {
 
     return InkWell(
       onTap: () {
@@ -255,7 +255,7 @@ class _CalenderGrid extends State<CalenderGrid> {
         height: 20,
         padding: EdgeInsets.only(left: 5, right: 5),
         width: double.infinity,
-        decoration: BoxDecoration(color: Colors.grey),
+        decoration: BoxDecoration(color: Theme.of(context).hintColor),
         child: Text(event.name),
       ),
     );
@@ -307,18 +307,21 @@ class _CalenderGrid extends State<CalenderGrid> {
                 List<Widget> tags = [];
 
                 for (int i = 0; i < min(listEvents.length, tagNum); i++) {
-                  tags.add(_createTag(listEvents[i]));
+                  tags.add(_createTag(context, listEvents[i]));
                 }
 
                 if (listEvents.length == tagNum + 1) {
-                  tags.add(_createTag(listEvents.last));
+                  tags.add(_createTag(context, listEvents.last));
                 } else if (listEvents.length > tagNum + 1) {
                   tags.add(Text('${listEvents.length - tagNum - 1}'));
                 }
 
                 if (today == itemDay) {
-                  cardColor = Colors.red;
-                }
+                  cardColor = Theme.of(context).highlightColor;
+                } 
+                // else {
+                //   cardColor = Theme.of(context).cardColor;
+                // }
 
                 return Container(
                   decoration: BoxDecoration(
@@ -782,7 +785,7 @@ class _EditTag extends State<EditTag> {
       width: 300,
       padding: EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: Colors.cyan,
+        color: Theme.of(context).dividerColor,
         borderRadius: BorderRadius.all(Radius.circular(5)),
       ),
       child: Column(
@@ -823,7 +826,10 @@ class _EditTag extends State<EditTag> {
             onChanged: (value) {
               widget.event.name = value;
             },
-            decoration: InputDecoration(border: OutlineInputBorder()),
+            decoration: InputDecoration(
+              filled: true,
+              border: OutlineInputBorder(),
+            ),
           ),
         ],
       ),
