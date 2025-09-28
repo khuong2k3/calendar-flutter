@@ -23,6 +23,7 @@ enum EventType { holiday, user }
 
 class Event {
   String name;
+  String location;
   DateTime start;
   DateTime end;
   EventType eventType;
@@ -36,13 +37,16 @@ class Event {
     required this.eventType,
     required this.repeat,
   }) : start = startOfDay(start),
-    end = startOfDay(start).add(const Duration(hours: 24));
+    end = startOfDay(start).add(const Duration(hours: 24)),
+  location = "";
 }
 
 
 enum PopupType {
   edit,
   detail,
+  edittag,
+  addtag,
 }
 
 enum Repeat {
@@ -87,5 +91,4 @@ final globalPopupEventNotifier = ValueNotifier<PopupEvent?>(null);
 final globalEventNotifier = ValueNotifier<OverlayPortalController?>(null);
 
 final globalMouseNotifier = ValueNotifier<PointerDownEvent?>(null);
-
 

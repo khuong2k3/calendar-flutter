@@ -12,3 +12,7 @@ void insertMapDefault<K, T>(Map<K, T> map, K key, void Function(T) setter, T def
   }
 }
 
+String dateString(DateTime date) {
+  return '${date.year}-${date.month}-${date.day}';
+}
+

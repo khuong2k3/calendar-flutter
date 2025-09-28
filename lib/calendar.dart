@@ -44,8 +44,8 @@ Widget month(int cellSize, int day, int start, int today) {
       itemCount: day + start + 7,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
-        crossAxisSpacing: 1.0,
-        mainAxisSpacing: 1.0,
+        crossAxisSpacing: 0.0,
+        mainAxisSpacing: 0.0,
       ),
       itemBuilder: (context, index) {
         if (index < 7) {

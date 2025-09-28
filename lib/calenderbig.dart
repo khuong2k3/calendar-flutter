@@ -152,6 +152,13 @@ class _CalenderGrid extends State<CalenderGrid> {
   Offset _popupOffset = Offset(0, 0);
   bool _open = false;
 
+  void _hideOverlay() {
+    _overlayCtrl.hide();
+    setState(() {
+      scrollPhysics = null;
+    });
+  }
+
   Widget _buildOverlay(BuildContext context) {
     if (globalPopupEventNotifier.value == null) {
       return SizedBox.shrink();
@@ -159,17 +166,52 @@ class _CalenderGrid extends State<CalenderGrid> {
     PopupEvent popupEvent = globalPopupEventNotifier.value as PopupEvent;
 
     if (popupEvent.popupType == PopupType.detail) {
+      DateTime dateTime = startOfDay(popupEvent.event.start);
       return EditDetail(
         event: popupEvent.event,
         onExit: () {
-          _overlayCtrl.hide();
+          _hideOverlay();
         },
         onSave: (event) {
-          insertMapDefault(events, startOfDay(event.start), (listEvent) {
-            listEvent.add(event);
-          }, [event]);
-          _overlayCtrl.hide();
+          _hideOverlay();
         },
+        onDelete: (event) {
+          events[dateTime]?.remove(event);
+          _hideOverlay();
+        },
+      );
+    }
+
+    if (popupEvent.popupType == PopupType.addtag ||
+        popupEvent.popupType == PopupType.edittag) {
+      return TooltipWrapper(
+        globalOffset: _popupOffset,
+        boundingBox: scrollViewSize,
+        layerLink: _layerLink,
+        paintColor: Colors.cyan,
+        child: EditTag(
+          event: popupEvent.event,
+          onSave: (event) {
+            if (popupEvent.popupType == PopupType.addtag) {
+              insertMapDefault(events, startOfDay(event.start), (listEvent) {
+                listEvent.add(event);
+              }, [event]);
+            }
+            _hideOverlay();
+          },
+          onEdit: (event) {
+            setState(() {});
+            if (popupEvent.popupType == PopupType.addtag) {
+              insertMapDefault(events, startOfDay(event.start), (listEvent) {
+                listEvent.add(event);
+              }, [event]);
+            }
+            globalPopupEventNotifier.value = PopupEvent(
+              event,
+              PopupType.detail,
+            );
+          },
+        ),
       );
     }
 
@@ -185,9 +227,7 @@ class _CalenderGrid extends State<CalenderGrid> {
           insertMapDefault(events, startOfDay(event.start), (listEvent) {
             listEvent.add(event);
           }, [event]);
-          setState(() {
-            scrollPhysics = null;
-          });
+          _hideOverlay();
         },
         onEdit: (event) {
           popupEvent.popupType = PopupType.detail;
@@ -200,6 +240,26 @@ class _CalenderGrid extends State<CalenderGrid> {
   }
 
   ScrollPhysics? scrollPhysics;
+
+  Widget _createTag(Event event) {
+
+    return InkWell(
+      onTap: () {
+        globalPopupEventNotifier.value = PopupEvent(
+          event,
+          PopupType.edittag,
+        );
+        _overlayCtrl.toggle();
+      },
+      child: Container(
+        height: 20,
+        padding: EdgeInsets.only(left: 5, right: 5),
+        width: double.infinity,
+        decoration: BoxDecoration(color: Colors.grey),
+        child: Text(event.name),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +274,9 @@ class _CalenderGrid extends State<CalenderGrid> {
 
     int dayDiff = weekEnd.difference(weekStart).inDays;
     DateTime today = startOfDay(DateTime.now());
+
+    double cellSize = _currentWidth / 7;
+    int tagNum = (cellSize / 20).floor() - 2;
 
     return Listener(
       onPointerDown: (e) {
@@ -243,11 +306,14 @@ class _CalenderGrid extends State<CalenderGrid> {
                 List<Event> listEvents = events[itemDay] ?? [];
                 List<Widget> tags = [];
 
-                if (listEvents.isNotEmpty) {
-                  tags.add(Text(listEvents[0].name));
+                for (int i = 0; i < min(listEvents.length, tagNum); i++) {
+                  tags.add(_createTag(listEvents[i]));
                 }
-                if (listEvents.length > 1) {
-                  tags.add(Text('${listEvents.length - 1}'));
+
+                if (listEvents.length == tagNum + 1) {
+                  tags.add(_createTag(listEvents.last));
+                } else if (listEvents.length > tagNum + 1) {
+                  tags.add(Text('${listEvents.length - tagNum - 1}'));
                 }
 
                 if (today == itemDay) {
@@ -268,24 +334,31 @@ class _CalenderGrid extends State<CalenderGrid> {
                           eventType: EventType.user,
                           repeat: Repeat.no,
                         ),
-                        PopupType.edit,
+                        PopupType.addtag,
                       );
                       _overlayCtrl.toggle();
-                      setState(() {
-                        scrollPhysics = NeverScrollableScrollPhysics();
-                      });
+                      if (_overlayCtrl.isShowing) {
+                        setState(() {
+                          scrollPhysics = NeverScrollableScrollPhysics();
+                        });
+                      } else {
+                        setState(() {
+                          scrollPhysics = null;
+                        });
+                      }
                       _open = !_open;
                     },
-                    child: Center(child:
-                      Column(
+                    child: Center(
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                        Text('${itemDay.day}'),
-                        Column(
+                          Text('${itemDay.day}'),
+                          Column(
                             mainAxisSize: MainAxisSize.min,
                             children: tags,
                           ),
-                      ],)
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -352,9 +425,7 @@ class _EditDate extends State<EditDate> {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '${widget.event.start.year}-${widget.event.start.month}-${widget.event.start.day}',
-          ),
+          Text(dateString(widget.event.start)),
           const Text("Event Name:"),
           Padding(
             padding: const EdgeInsets.all(5),
@@ -395,16 +466,44 @@ class EditDetail extends StatefulWidget {
   Event event;
   void Function() onExit;
   void Function(Event) onSave;
+  void Function(Event) onDelete;
 
-  EditDetail({required this.event, required this.onExit, required this.onSave});
+  EditDetail({
+    required this.event,
+    required this.onExit,
+    required this.onSave,
+    required this.onDelete,
+  });
 
   @override
   State<StatefulWidget> createState() => _EditDetail();
 }
 
 class _EditDetail extends State<EditDetail> {
-  bool isAllDay = false;
+  late bool isAllDay;
   final _controllerReminders = OverlayPortalController();
+  late TextEditingController _nameControler;
+  late TextEditingController _locationControler;
+  late TextEditingController _notesControler;
+
+  @override
+  void initState() {
+    super.initState();
+    isAllDay =
+        widget.event.start.hour == 0 &&
+        widget.event.end.difference(widget.event.start).inHours == 24;
+
+    _nameControler = TextEditingController(text: widget.event.name);
+    _locationControler = TextEditingController(text: widget.event.location);
+    _notesControler = TextEditingController(text: widget.event.notes);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _nameControler.dispose();
+    _locationControler.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -450,6 +549,9 @@ class _EditDetail extends State<EditDetail> {
                           ),
                         ),
                         onPressed: () {
+                          widget.event.name = _nameControler.value.text;
+                          widget.event.location = _locationControler.value.text;
+                          widget.event.notes = _notesControler.value.text;
                           widget.onSave(widget.event);
                         },
                         child: Text("Save"),
@@ -461,7 +563,12 @@ class _EditDetail extends State<EditDetail> {
             ),
             SingleChildScrollView(
               child: Container(
-                padding: const EdgeInsets.only(left: 50, right: 50, top: 5, bottom: 50),
+                padding: const EdgeInsets.only(
+                  left: 50,
+                  right: 50,
+                  top: 5,
+                  bottom: 50,
+                ),
                 child: Column(
                   children: [
                     Column(
@@ -469,12 +576,20 @@ class _EditDetail extends State<EditDetail> {
                       children: [
                         const Text("Event Name:"),
                         TextField(
+                          controller: _nameControler,
+                          // onChanged: (value) {
+                          //   widget.event.name = value;
+                          // },
                           decoration: InputDecoration(
                             border: OutlineInputBorder(),
                           ),
                         ),
                         const Text("Location:"),
                         TextField(
+                          controller: _locationControler,
+                          // onChanged: (value) {
+                          //   widget.event.location = value;
+                          // },
                           decoration: InputDecoration(
                             border: OutlineInputBorder(),
                           ),
@@ -611,15 +726,15 @@ class _EditDetail extends State<EditDetail> {
                       children: [
                         const Text("Notes: "),
                         TextField(
+                          controller: _notesControler,
                           decoration: InputDecoration(
                             border: OutlineInputBorder(),
                           ),
-                          onChanged: (value) {
-                            widget.event.notes = value;
-                          },
                         ),
                         FilledButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            widget.onDelete(widget.event);
+                          },
                           child: Center(child: Text("Delete Event")),
                         ),
                       ],
@@ -630,6 +745,87 @@ class _EditDetail extends State<EditDetail> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class EditTag extends StatefulWidget {
+  Event event;
+  void Function(Event) onSave;
+  void Function(Event) onEdit;
+
+  EditTag({required this.event, required this.onSave, required this.onEdit});
+
+  @override
+  State<StatefulWidget> createState() => _EditTag();
+}
+
+class _EditTag extends State<EditTag> {
+  late TextEditingController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(text: widget.event.name);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _textController.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 300,
+      padding: EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.cyan,
+        borderRadius: BorderRadius.all(Radius.circular(5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 5.0,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  FilledButton(
+                    onPressed: () {
+                      widget.onEdit(widget.event);
+                    },
+                    child: Icon(Icons.edit),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      widget.onSave(widget.event);
+                    },
+                    child: Text("Save"),
+                  ),
+                ],
+              ),
+              Center(
+                child: Text(
+                  dateString(widget.event.start),
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          const Text("Edit name:", style: TextStyle(fontSize: 15)),
+          TextField(
+            controller: _textController,
+            onChanged: (value) {
+              widget.event.name = value;
+            },
+            decoration: InputDecoration(border: OutlineInputBorder()),
+          ),
+        ],
       ),
     );
   }
