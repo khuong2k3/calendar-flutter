@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/event_manager.dart';
 import 'package:flutter_app/sizedwidget.dart';
 
 class MyDropdown extends StatefulWidget {
   Widget content;
   Widget child;
   OverlayPortalController? controller;
+  Color? arrowColor;
+
 
   MyDropdown({
     super.key,
     required this.content,
     required this.child,
     this.controller,
+    this.arrowColor,
   });
 
   @override
@@ -47,7 +49,7 @@ class _Dropdown extends State<MyDropdown> {
         alignment: Alignment.topLeft,
         child: CustomPaint(
           painter: TooltipPainter(
-            color: Colors.black87,
+            color: widget.arrowColor == null ? Colors.black87 : widget.arrowColor as Color, 
             alignment: Alignment.topLeft,
             offset: Offset(0.0, 0.0),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/calendar.dart';
 import 'package:flutter_app/calenderbig.dart';
 import 'package:flutter_app/event_manager.dart';
+import 'package:flutter_app/helper.dart';
 
 void main() {
   runApp(const MyApp());
@@ -61,7 +62,10 @@ class MyApp extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 10.0,
             children: [
-              Calendar(),
+              Calendar(
+                seleted: startOfDay(DateTime.now()),
+                width: 280,
+              ),
               Calenderbig(),
             ],
           ),
