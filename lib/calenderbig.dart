@@ -242,13 +242,9 @@ class _CalenderGrid extends State<CalenderGrid> {
   ScrollPhysics? scrollPhysics;
 
   Widget _createTag(BuildContext context, Event event) {
-
     return InkWell(
       onTap: () {
-        globalPopupEventNotifier.value = PopupEvent(
-          event,
-          PopupType.edittag,
-        );
+        globalPopupEventNotifier.value = PopupEvent(event, PopupType.edittag);
         _overlayCtrl.toggle();
       },
       child: Container(
@@ -318,7 +314,7 @@ class _CalenderGrid extends State<CalenderGrid> {
 
                 if (today == itemDay) {
                   cardColor = Theme.of(context).highlightColor;
-                } 
+                }
                 // else {
                 //   cardColor = Theme.of(context).cardColor;
                 // }

@@ -37,20 +37,18 @@ class Event {
     required this.eventType,
     required this.repeat,
   }) : start = startOfDay(start),
-    end = startOfDay(start).add(const Duration(hours: 24)),
-  location = "";
+       end = startOfDay(start).add(const Duration(hours: 24)),
+       location = "";
 }
 
-
-enum PopupType {
-  edit,
-  detail,
-  edittag,
-  addtag,
-}
+enum PopupType { edit, detail, edittag, addtag }
 
 enum Repeat {
-  no, daily, weekly, monthly, yearly;
+  no,
+  daily,
+  weekly,
+  monthly,
+  yearly;
 
   String toName() {
     switch (this) {
@@ -74,7 +72,6 @@ class Reminder {
 
   Reminder(this.duration, this.range);
 
-
   @override
   String toString() {
     if (duration == 1) {
@@ -84,11 +81,9 @@ class Reminder {
   }
 }
 
-
 final globalPopupEventNotifier = ValueNotifier<PopupEvent?>(null);
 
 // Notifier to hold the latest event
 final globalEventNotifier = ValueNotifier<OverlayPortalController?>(null);
 
 final globalMouseNotifier = ValueNotifier<PointerDownEvent?>(null);
-

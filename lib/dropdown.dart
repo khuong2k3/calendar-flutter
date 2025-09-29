@@ -7,7 +7,12 @@ class MyDropdown extends StatefulWidget {
   Widget child;
   OverlayPortalController? controller;
 
-  MyDropdown({super.key, required this.content, required this.child, this.controller});
+  MyDropdown({
+    super.key,
+    required this.content,
+    required this.child,
+    this.controller,
+  });
 
   @override
   State<StatefulWidget> createState() => _Dropdown();
@@ -32,9 +37,11 @@ class _Dropdown extends State<MyDropdown> {
   }
 
   Widget _dropdownBuilder(BuildContext context) {
-
     return CompositedTransformFollower(
-      offset: Offset((_size.width - _sizeContent.width) / 2, _size.height + arrowHeight),
+      offset: Offset(
+        (_size.width - _sizeContent.width) / 2,
+        _size.height + arrowHeight,
+      ),
       link: _layerLink,
       child: Align(
         alignment: Alignment.topLeft,
@@ -52,7 +59,7 @@ class _Dropdown extends State<MyDropdown> {
             },
             child: widget.content,
           ),
-        )
+        ),
       ),
     );
   }
@@ -84,33 +91,35 @@ class SelectionList extends StatelessWidget {
   final List<DropdownMenuItem> items;
   final void Function(dynamic) onSelected;
 
-  SelectionList({ required this.onSelected, required this.items });
+  SelectionList({required this.onSelected, required this.items});
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       padding: EdgeInsets.all(10),
-      decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.all(Radius.circular(5))),
+      decoration: BoxDecoration(
+        color: Colors.black87,
+        borderRadius: BorderRadius.all(Radius.circular(5)),
+      ),
       child: Column(
         spacing: 5,
         mainAxisSize: MainAxisSize.min,
         children: items.map((item) {
-        return InkWell(
-          focusColor: Colors.blue,
-          onTap: () {
-            onSelected(item.value);
-            if (item.onTap != null) {
-              (item.onTap as void Function())();
-            }
-          },
-          child: item.child
-        );
-      }).toList(),)
+          return InkWell(
+            focusColor: Colors.blue,
+            onTap: () {
+              onSelected(item.value);
+              if (item.onTap != null) {
+                (item.onTap as void Function())();
+              }
+            },
+            child: item.child,
+          );
+        }).toList(),
+      ),
     );
   }
 }
-
 
 const double arrowHeight = 8.0;
 const double arrowWidth = 16.0;

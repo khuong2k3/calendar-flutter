@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-
 class Sizedwidget extends StatefulWidget {
   final Widget? child;
   final void Function(Size) onSize;
 
-  const Sizedwidget({super.key, this.child, required this.onSize });
+  const Sizedwidget({super.key, this.child, required this.onSize});
 
   @override
   State<StatefulWidget> createState() => _Sizedwidget();
@@ -15,9 +14,9 @@ class _Sizedwidget extends State<Sizedwidget> {
   Size? _size;
   final GlobalKey _key = GlobalKey();
 
-
   void _setSize() {
-    RenderBox? renderBox = _key.currentContext?.findRenderObject() as RenderBox?;
+    RenderBox? renderBox =
+        _key.currentContext?.findRenderObject() as RenderBox?;
 
     if (renderBox != null) {
       if (renderBox.size != _size) {
@@ -42,14 +41,6 @@ class _Sizedwidget extends State<Sizedwidget> {
 
   @override
   Widget build(BuildContext context) {
-
-    return SizedBox(
-      key: _key,
-      child: widget.child,
-    );
+    return SizedBox(key: _key, child: widget.child);
   }
 }
-
-
-
-
