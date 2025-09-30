@@ -577,173 +577,192 @@ class _EditDetail extends State<EditDetail> {
                   bottom: 50,
                 ),
                 child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Event Name:"),
-                          TextField(
-                            controller: _nameControler,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Event Name:"),
+                        TextField(
+                          controller: _nameControler,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const Text("Location:"),
+                        TextField(
+                          controller: _locationControler,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    const Text("Schedule:", style: TextStyle(fontSize: 20)),
+                    Column(
+                      spacing: 10.0,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("All day:"),
+                            Switch(
+                              value: isAllDay,
+                              onChanged: (value) {
+                                setState(() {
+                                  isAllDay = value;
+                                  widget.event.start = startOfDay(widget.event.start);
+                                  widget.event.end = widget.event.start.add(Duration(hours: 24));
+                                });
+                              },
                             ),
-                          ),
-                          const Text("Location:"),
-                          TextField(
-                            controller: _locationControler,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      const Text("Schedule:", style: TextStyle(fontSize: 20)),
-                      Column(
-                        spacing: 10.0,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text("All day:"),
-                              Switch(
-                                value: isAllDay,
-                                onChanged: (value) {
-                                  setState(() {
-                                    isAllDay = value;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                          DropdownDateSelector(
-                            name: "Start",
-                            date: widget.event.start,
-                          ),
-                          DropdownDateSelector(
-                            name: "End",
-                            date: widget.event.end,
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text("Reqeat"),
-                              DropdownButton(
-                                value: widget.event.repeat,
-                                items: Repeat.values.map((repeat) {
-                                  return DropdownMenuItem(
-                                    value: repeat,
-                                    child: Text(repeat.toName()),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value != null) {
+                          ],
+                        ),
+                        DropdownDateSelector(
+                          name: "Start",
+                          date: widget.event.start,
+                          onChange: (date) {
+                            widget.event.start = date;
+                            if (widget.event.end.difference(widget.event.start).isNegative) {
+                              setState(() {
+                                widget.event.end = widget.event.start;
+                              });
+                            }
+                          },
+                        ),
+                        DropdownDateSelector(
+                          name: "End",
+                          disabled: isAllDay,
+                          date: widget.event.end,
+                          onChange: (date) {
+                            widget.event.end = date;
+                            if (widget.event.end.difference(widget.event.start).isNegative) {
+                              setState(() {
+                                widget.event.start = widget.event.end;
+                              });
+                            }
+                          },
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Reqeat"),
+                            DropdownButton(
+                              value: widget.event.repeat,
+                              items: Repeat.values.map((repeat) {
+                                return DropdownMenuItem(
+                                  value: repeat,
+                                  child: Text(repeat.toName()),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
                                   setState(() {
                                     widget.event.repeat = value as Repeat;
                                   });
                                 }
-                                },
-                              ),
-                            ],
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    const Text("Reminders:", style: TextStyle(fontSize: 20)),
+                    Column(
+                      children: widget.event.reminders.map((reminder) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(reminder.toString()),
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  widget.event.reminders.remove(reminder);
+                                });
+                              },
+                              child: Icon(Icons.cancel),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                    MyDropdown(
+                      controller: _controllerReminders,
+                      content: SelectionList(
+                        items:
+                            [
+                              Reminder(5, "minute"),
+                              Reminder(10, "minute"),
+                              Reminder(15, "minute"),
+                              Reminder(30, "minute"),
+                              Reminder(1, "hour"),
+                              Reminder(6, "hour"),
+                              Reminder(12, "hour"),
+                              Reminder(1, "day"),
+                              Reminder(3, "day"),
+                              Reminder(1, "week"),
+                            ].map((reminder) {
+                              return DropdownMenuItem(
+                                value: reminder,
+                                child: Text(
+                                  reminder.toString(),
+                                  style: TextStyle(fontSize: 15),
+                                ),
+                              );
+                            }).toList(),
+                        onSelected: (item) {
+                          setState(() {
+                            widget.event.reminders.add(item as Reminder);
+                          });
+                          _controllerReminders.hide();
+                        },
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.only(
+                          top: 5,
+                          bottom: 5,
+                          left: 10,
+                          right: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black87,
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "Reminders",
+                            style: TextStyle(fontSize: 15),
                           ),
-                        ],
+                        ),
                       ),
-                      SizedBox(height: 10),
-                      const Text("Reminders:", style: TextStyle(fontSize: 20)),
-                      Column(
-                        children: widget.event.reminders.map((reminder) {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(reminder.toString()),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    widget.event.reminders.remove(reminder);
-                                  });
-                                },
-                                child: Icon(Icons.cancel),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                      MyDropdown(
-                        controller: _controllerReminders,
-                        content: SelectionList(
-                          items:
-                        [
-                            Reminder(5, "minute"),
-                            Reminder(10, "minute"),
-                            Reminder(15, "minute"),
-                            Reminder(30, "minute"),
-                            Reminder(1, "hour"),
-                            Reminder(6, "hour"),
-                            Reminder(12, "hour"),
-                            Reminder(1, "day"),
-                            Reminder(3, "day"),
-                            Reminder(1, "week"),
-                          ].map((reminder) {
-                            return DropdownMenuItem(
-                              value: reminder,
-                              child: Text(
-                                reminder.toString(),
-                                style: TextStyle(fontSize: 15),
-                              ),
-                            );
-                          }).toList(),
-                          onSelected: (item) {
-                            setState(() {
-                              widget.event.reminders.add(item as Reminder);
-                            });
-                            _controllerReminders.hide();
+                    ),
+                    SizedBox(height: 10),
+                    const Text("Notes:", style: TextStyle(fontSize: 20)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 10.0,
+                      children: [
+                        const Text("Notes: "),
+                        TextField(
+                          controller: _notesControler,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        FilledButton(
+                          onPressed: () {
+                            widget.onDelete(widget.event);
                           },
+                          child: Center(child: Text("Delete Event")),
                         ),
-                        child: Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.only(
-                            top: 5,
-                            bottom: 5,
-                            left: 10,
-                            right: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black87,
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                          ),
-                          child: Center(
-                            child: Text(
-                              "Reminders",
-                              style: TextStyle(fontSize: 15),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      const Text("Notes:", style: TextStyle(fontSize: 20)),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        spacing: 10.0,
-                        children: [
-                          const Text("Notes: "),
-                          TextField(
-                            controller: _notesControler,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          FilledButton(
-                            onPressed: () {
-                              widget.onDelete(widget.event);
-                            },
-                            child: Center(child: Text("Delete Event")),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -839,9 +858,11 @@ class _EditTag extends State<EditTag> {
 
 class DropdownDateSelector extends StatefulWidget {
   final String name;
+  final bool? disabled;
   DateTime date;
+  void Function(DateTime) onChange;
 
-  DropdownDateSelector({super.key, required this.name, required this.date});
+  DropdownDateSelector({super.key, required this.name, required this.date, required this.onChange, this.disabled});
 
   @override
   State<StatefulWidget> createState() => _DropdownDateSelector();
@@ -859,9 +880,11 @@ class _DropdownDateSelector extends State<DropdownDateSelector> {
           Text(widget.name),
           TextButton(
             onPressed: () {
-              setState(() {
-                _open = !_open;
-              });
+              if (widget.disabled == null || widget.disabled == false) {
+                setState(() {
+                  _open = !_open;
+                });
+              }
             },
             child: Row(
               children: [
@@ -875,7 +898,7 @@ class _DropdownDateSelector extends State<DropdownDateSelector> {
     ];
 
     if (_open) {
-      elements.add(DateInput(date: widget.date));
+      elements.add(DateInput(date: widget.date, onChange: widget.onChange));
     }
 
     return Column(
@@ -888,8 +911,9 @@ class _DropdownDateSelector extends State<DropdownDateSelector> {
 
 class DateInput extends StatefulWidget {
   DateTime date;
+  void Function(DateTime) onChange;
 
-  DateInput({super.key, required this.date});
+  DateInput({super.key, required this.date, required this.onChange});
 
   @override
   State<StatefulWidget> createState() => _DateInput();
@@ -898,18 +922,18 @@ class DateInput extends StatefulWidget {
 class _DateInput extends State<DateInput> {
   late TextEditingController _controler;
   late DateTime _date;
-  late int _hour;
-  late int _minute;
+  // late int _hour;
+  // late int _minute;
 
   @override
   void initState() {
     super.initState();
     _controler = TextEditingController(
-      text: "${widget.date.year}/${widget.date.month}/${widget.date.day}"
+      text: "${widget.date.year}/${widget.date.month}/${widget.date.day}",
     );
     _date = widget.date;
-    _hour = widget.date.hour;
-    _minute = widget.date.minute;
+    // _hour = widget.date.hour;
+    // _minute = widget.date.minute;
   }
 
   @override
@@ -920,11 +944,17 @@ class _DateInput extends State<DateInput> {
 
   void _changeDate(DateTime date) {
     setState(() {
+      String newText = "${date.year}/${date.month}/${date.day}";
       _date = date;
-      _controler = TextEditingController(
-        text: "${date.year}/${date.month}/${date.day}"
+      _controler.value = _controler.value.copyWith(
+        text: newText,
+        selection: TextSelection.collapsed(
+          offset:  newText.length
+        ),
+        composing: TextRange.empty,
       );
     });
+    widget.onChange(date);
   }
 
   @override
@@ -956,25 +986,53 @@ class _DateInput extends State<DateInput> {
               keyboardType: TextInputType.datetime,
               controller: _controler,
               onChanged: (value) {
+                List<int> splited = value
+                    .replaceAll(RegExp(r'[^0-9\/]'), "")
+                    .split("/")
+                    .where((x) => x != "")
+                    .map(int.parse)
+                    .toList();
+
+                if (splited.isNotEmpty) {
+                  _changeDate(
+                    DateTime(
+                      splited[0],
+                      ((splited.length > 1 ? splited[1] : 0) % 12) + 1,
+                      ((splited.length > 2 ? splited[2] : 0) % daysInMonth(splited[0], splited[1])) + 1,
+                      _date.hour,
+                      _date.minute,
+                    ),
+                  );
+                }
               },
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 suffixIcon: Icon(Icons.arrow_drop_down),
               ),
-            )
+            ),
           ),
-          ),
+        ),
         Row(
           mainAxisSize: MainAxisSize.min,
           spacing: 4,
           children: [
-            NumberPicker(value: _hour, start: 0, end: 23, onChange: (value) {
-              _hour = value;
-            }),
+            NumberPicker(
+              value: _date.hour,
+              start: 0,
+              end: 23,
+              onChange: (value) {
+                _changeDate(_date.copyWith(hour: value));
+              },
+            ),
             Text(":"),
-            NumberPicker(value: _minute, start: 0, end: 59, onChange: (value) {
-              _minute = value;
-            }),
+            NumberPicker(
+              value: _date.minute,
+              start: 0,
+              end: 59,
+              onChange: (value) {
+                _changeDate(_date.copyWith(minute: value));
+              },
+            ),
           ],
         ),
       ],
@@ -1025,7 +1083,12 @@ class _NumberPicker extends State<NumberPicker> {
       if (widget.start != null && widget.value < (widget.start as int)) {
         widget.value = widget.start as int;
       }
-      _controller.text = widget.value.toString();
+      String newValue = widget.value.toString();
+      _controller.value = _controller.value.copyWith(
+        text: newValue,
+        selection: TextSelection.collapsed(offset: newValue.length),
+        composing: TextRange.empty,
+      );
     });
     widget.onChange(widget.value);
   }
@@ -1058,9 +1121,7 @@ class _NumberPicker extends State<NumberPicker> {
               controller: _controller,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-              ),
+              decoration: InputDecoration(border: InputBorder.none),
               onChanged: (value) {
                 value = value.replaceAll(RegExp(r"\D"), "");
                 if (value.isEmpty) {
@@ -1068,8 +1129,7 @@ class _NumberPicker extends State<NumberPicker> {
                 } else {
                   _changeValue(int.parse(value));
                 }
-                _controller.text = widget.value.toString();
-              }
+              },
             ),
           ),
           TextButton(

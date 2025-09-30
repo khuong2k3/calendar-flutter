@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/helper.dart';
 
-
 class Calendar extends StatefulWidget {
-  // int? year;
-  // int? month;
+  // int year;
+  // int month;
   double width;
   DateTime seleted;
   void Function(DateTime)? onSelectDate;
 
-  Calendar({super.key, required this.width,  this.onSelectDate, required this.seleted});
+  Calendar({
+    super.key,
+    required this.width,
+    this.onSelectDate,
+    required this.seleted,
+  });
 
   @override
   State<Calendar> createState() => _CalendarState();
@@ -29,45 +33,87 @@ class _CalendarState extends State<Calendar> {
 
   @override
   Widget build(BuildContext context) {
-    double cellSize = widget.width / 7;
-
-    return Column(
+    return Padding(
+      padding: EdgeInsets.only(top: 5, bottom: 5),
+      child: Column(
       mainAxisSize: MainAxisSize.min,
       spacing: 10.0,
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _month -= 1;
-                  if (_month == 0) {
-                    _month = 12;
-                    _year -= 1;
-                  }
-                });
-              },
-              child: Icon(Icons.arrow_left)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _month -= 1;
+                      if (_month == 0) {
+                        _month = 12;
+                        _year -= 1;
+                      }
+                    });
+                  },
+                  child: Icon(Icons.arrow_left),
+                ),
+                Text(MONTHS_NAME[_month - 1]),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _month += 1;
+                      if (_month == 13) {
+                        _month = 1;
+                        _year += 1;
+                      }
+                    });
+                  },
+                  child: Icon(Icons.arrow_right),
+                ),
+              ],
             ),
-            Text("$_month"),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _month += 1;
-                  if (_month == 13) {
-                    _month = 1;
-                    _year += 1;
-                  }
-                });
-              },
-              child: Icon(Icons.arrow_right)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _year--;
+                    });
+                  },
+                  child: Icon(Icons.arrow_left),
+                ),
+                Text("$_year"),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _year++;
+                    });
+                  },
+                  child: Icon(Icons.arrow_right),
+                ),
+              ],
             ),
           ],
         ),
         MonthView(
-          cellSize: cellSize, year: _year, month: _month, seleted: widget.seleted,
+          width: widget.width,
+          year: _year,
+          month: _month,
+          seleted: widget.seleted,
           onSelectDate: (date) {
             if (widget.onSelectDate != null) {
               (widget.onSelectDate as void Function(DateTime))(date);
@@ -75,32 +121,41 @@ class _CalendarState extends State<Calendar> {
           },
         ),
       ],
-    );
+    ));
   }
 }
 
 class MonthView extends StatelessWidget {
-  double cellSize;
-  int year;
-  int month;
-  DateTime seleted;
-  void Function(DateTime) onSelectDate;
+  final double width;
+  final int year;
+  final int month;
+  final DateTime seleted;
+  final void Function(DateTime) onSelectDate;
 
-  MonthView({super.key, required this.cellSize, required this.year, required this.month, required this.onSelectDate, required this.seleted});
+  const MonthView({
+    super.key,
+    required this.width,
+    required this.year,
+    required this.month,
+    required this.onSelectDate,
+    required this.seleted,
+  });
 
   @override
   Widget build(BuildContext context) {
     int dayInMonth = daysInMonth(year, month);
     DateTime startDate = DateTime(year, month, 1);
     int start = startDate.weekday % 7;
-    double height = (((dayInMonth + start) / 7.0).ceil() + 1) * cellSize.toDouble();
+    double cellSize = width / 7;
+    double height =
+        (((dayInMonth + start) / 7.0).ceil() + 1) * cellSize.toDouble();
 
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).primaryColor,
         borderRadius: BorderRadius.all(Radius.circular(5)),
       ),
-      width: cellSize * 7,
+      width: width,
       height: height,
       child: GridView.builder(
         shrinkWrap: true,
@@ -117,7 +172,9 @@ class MonthView extends StatelessWidget {
           if (index < start + 7) {
             return Card();
           }
-          DateTime currentDate = startDate.add(Duration(days: index - start - 7));
+          DateTime currentDate = startDate.add(
+            Duration(days: index - start - 7),
+          );
 
           Color? cardColor;
 
@@ -132,11 +189,10 @@ class MonthView extends StatelessWidget {
                 onSelectDate(currentDate);
               },
               child: Center(child: Text('${currentDate.day}')),
-            )
+            ),
           );
         },
       ),
     );
   }
 }
-
