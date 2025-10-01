@@ -39,6 +39,16 @@ class Event {
   }) : start = startOfDay(start),
        end = startOfDay(start).add(const Duration(hours: 24)),
        location = "";
+
+  Event copy() {
+    Event event = Event(name: name, start: start, eventType: eventType, repeat: repeat);
+    event.location = location;
+    event.end = end;
+    event.reminders = reminders.toList();
+    event.notes = notes;
+
+    return event;
+  }
 }
 
 enum PopupType { edit, detail, edittag, addtag }
@@ -126,6 +136,21 @@ class EventManager {
         add(event);
       }
     } 
+  }
+
+  void remove(DateTime date, Event event) {
+    _events[startOfDay(date)]?.remove(event);
+  }
+
+  void replace(Event oldEvent, Event newEvent) {
+    DateTime dateTime = startOfDay(oldEvent.start);
+    List<Event> events = getDate(dateTime);
+    int index = events.indexOf(oldEvent);
+    if (index != -1) {
+      events[index] = newEvent;
+    }
+
+    update(dateTime);
   }
 }
 

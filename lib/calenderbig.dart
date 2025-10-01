@@ -8,7 +8,7 @@ import 'package:flutter_app/event_manager.dart';
 import 'package:flutter_app/helper.dart';
 import 'package:flutter_app/tooltip.dart';
 
-int MAX_RENDER = 150;
+int MAX_RENDER = 200;
 
 class Calenderbig extends StatefulWidget {
   const Calenderbig({super.key});
@@ -19,7 +19,7 @@ class Calenderbig extends StatefulWidget {
 
 class _CalendarBigState extends State<Calenderbig> {
   DateTime startRender = startOfDay(DateTime.now());
-  DateTime endRender = startOfDay(DateTime.now()).add(Duration(days: 70));
+  DateTime endRender = startOfDay(DateTime.now()).add(Duration(days: 100));
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +75,6 @@ class _CalenderGrid extends State<CalenderGrid> {
   Size? scrollViewSize;
 
   double _currentWidth = 0.0;
-  Map<DateTime, List<Event>> events = {};
   ScrollController controller = ScrollController(
     initialScrollOffset: 0.001,
     keepScrollOffset: false,
@@ -112,15 +111,6 @@ class _CalenderGrid extends State<CalenderGrid> {
   @override
   void initState() {
     super.initState();
-    for (Event event in widget.events) {
-      DateTime date = startOfDay(event.start);
-      List<Event>? eventsList = events[date];
-      if (eventsList != null) {
-        eventsList.add(event);
-      } else {
-        events[date] = [event];
-      }
-    }
     setState(() {
       startRender = widget.startDate;
       endRender = widget.endDate;
@@ -176,9 +166,10 @@ class _CalenderGrid extends State<CalenderGrid> {
         },
         onSave: (event) {
           _hideOverlay();
+          widget._events.replace(popupEvent.event, event);
         },
         onDelete: (event) {
-          events[dateTime]?.remove(event);
+          widget._events.remove(dateTime, event);
           _hideOverlay();
         },
       );
@@ -195,18 +186,14 @@ class _CalenderGrid extends State<CalenderGrid> {
           event: popupEvent.event,
           onSave: (event) {
             if (popupEvent.popupType == PopupType.addtag) {
-              insertMapDefault(events, startOfDay(event.start), (listEvent) {
-                listEvent.add(event);
-              }, [event]);
+              widget._events.add(event);
             }
             _hideOverlay();
           },
           onEdit: (event) {
             setState(() {});
             if (popupEvent.popupType == PopupType.addtag) {
-              insertMapDefault(events, startOfDay(event.start), (listEvent) {
-                listEvent.add(event);
-              }, [event]);
+              widget._events.add(event);
             }
             globalPopupEventNotifier.value = PopupEvent(
               event,
@@ -226,9 +213,7 @@ class _CalenderGrid extends State<CalenderGrid> {
         event: popupEvent.event,
         onOk: (event) {
           _overlayCtrl.hide();
-          insertMapDefault(events, startOfDay(event.start), (listEvent) {
-            listEvent.add(event);
-          }, [event]);
+          widget._events.add(event);
           _hideOverlay();
         },
         onEdit: (event) {
@@ -301,7 +286,7 @@ class _CalenderGrid extends State<CalenderGrid> {
               itemBuilder: (context, index) {
                 DateTime itemDay = weekStart.add(Duration(days: index));
                 Color cardColor = Colors.black26;
-                List<Event> listEvents = events[itemDay] ?? [];
+                List<Event> listEvents = widget._events.getDate(itemDay);
                 List<Widget> tags = [];
 
                 for (int i = 0; i < min(listEvents.length, tagNum); i++) {
@@ -461,12 +446,13 @@ class _EditDate extends State<EditDate> {
 }
 
 class EditDetail extends StatefulWidget {
-  Event event;
+  final Event event;
   void Function() onExit;
   void Function(Event) onSave;
   void Function(Event) onDelete;
 
   EditDetail({
+    super.key,
     required this.event,
     required this.onExit,
     required this.onSave,
@@ -484,6 +470,7 @@ class _EditDetail extends State<EditDetail> {
   late TextEditingController _nameControler;
   late TextEditingController _locationControler;
   late TextEditingController _notesControler;
+  late Event _event;
 
   @override
   void initState() {
@@ -495,6 +482,7 @@ class _EditDetail extends State<EditDetail> {
     _nameControler = TextEditingController(text: widget.event.name);
     _locationControler = TextEditingController(text: widget.event.location);
     _notesControler = TextEditingController(text: widget.event.notes);
+    _event = widget.event.copy();
   }
 
   @override
@@ -520,7 +508,7 @@ class _EditDetail extends State<EditDetail> {
               children: [
                 Center(
                   child: Text(
-                    dateString(widget.event.start),
+                    dateString(_event.start),
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
@@ -536,7 +524,7 @@ class _EditDetail extends State<EditDetail> {
                           ),
                         ),
                         onPressed: widget.onExit,
-                        child: Text("Cancel"),
+                        child: const Text("Cancel"),
                       ),
                       FilledButton(
                         style: FilledButton.styleFrom(
@@ -545,10 +533,7 @@ class _EditDetail extends State<EditDetail> {
                           ),
                         ),
                         onPressed: () {
-                          widget.event.name = _nameControler.value.text;
-                          widget.event.location = _locationControler.value.text;
-                          widget.event.notes = _notesControler.value.text;
-                          widget.onSave(widget.event);
+                          widget.onSave(_event);
                         },
                         child: const Text("Save"),
                       ),
@@ -580,6 +565,9 @@ class _EditDetail extends State<EditDetail> {
                           decoration: InputDecoration(
                             border: OutlineInputBorder(),
                           ),
+                          onChanged: (value) {
+                            _event.name = value;
+                          },
                         ),
                         const Text("Location:"),
                         TextField(
@@ -587,6 +575,9 @@ class _EditDetail extends State<EditDetail> {
                           decoration: InputDecoration(
                             border: OutlineInputBorder(),
                           ),
+                          onChanged: (value) {
+                            _event.location = value;
+                          },
                         ),
                       ],
                     ),
@@ -604,8 +595,8 @@ class _EditDetail extends State<EditDetail> {
                               onChanged: (value) {
                                 setState(() {
                                   isAllDay = value;
-                                  widget.event.start = startOfDay(widget.event.start);
-                                  widget.event.end = widget.event.start.add(Duration(hours: 24));
+                                  _event.start = startOfDay(_event.start);
+                                  _event.end = _event.start.add(Duration(hours: 24));
                                 });
                               },
                             ),
@@ -613,24 +604,24 @@ class _EditDetail extends State<EditDetail> {
                         ),
                         DropdownDateSelector(
                           name: "Start",
-                          date: widget.event.start,
+                          date: _event.start,
                           onChange: (date) {
                             setState(() { });
-                            widget.event.start = date;
-                            if (widget.event.end.difference(widget.event.start).isNegative) {
-                              widget.event.end = widget.event.start;
+                            _event.start = date;
+                            if (_event.end.difference(_event.start).isNegative) {
+                              _event.end = _event.start;
                             }
                           },
                         ),
                         DropdownDateSelector(
                           name: "End",
                           disabled: isAllDay,
-                          date: widget.event.end,
+                          date: _event.end,
                           onChange: (date) {
                             setState(() { });
                             widget.event.end = date;
-                            if (widget.event.end.difference(widget.event.start).isNegative) {
-                              widget.event.start = widget.event.end;
+                            if (_event.end.difference(_event.start).isNegative) {
+                              _event.start = _event.end;
                             }
                           },
                         ),
@@ -639,7 +630,7 @@ class _EditDetail extends State<EditDetail> {
                           children: [
                             const Text("Reqeat"),
                             DropdownButton(
-                              value: widget.event.repeat,
+                              value: _event.repeat,
                               items: Repeat.values.map((repeat) {
                                 return DropdownMenuItem(
                                   value: repeat,
@@ -649,7 +640,7 @@ class _EditDetail extends State<EditDetail> {
                               onChanged: (value) {
                                 if (value != null) {
                                   setState(() {
-                                    widget.event.repeat = value as Repeat;
+                                    _event.repeat = value;
                                   });
                                 }
                               },
@@ -704,7 +695,7 @@ class _EditDetail extends State<EditDetail> {
                             }).toList(),
                         onSelected: (item) {
                           setState(() {
-                            widget.event.reminders.add(item as Reminder);
+                            _event.reminders.add(item as Reminder);
                           });
                           _controllerReminders.hide();
                         },
@@ -729,7 +720,7 @@ class _EditDetail extends State<EditDetail> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     const Text("Notes:", style: TextStyle(fontSize: 20)),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -738,7 +729,7 @@ class _EditDetail extends State<EditDetail> {
                         const Text("Notes: "),
                         TextField(
                           controller: _notesControler,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             border: OutlineInputBorder(),
                           ),
                         ),
@@ -746,7 +737,7 @@ class _EditDetail extends State<EditDetail> {
                           onPressed: () {
                             widget.onDelete(widget.event);
                           },
-                          child: Center(child: const Text("Delete Event")),
+                          child:  const Center(child: Text("Delete Event")),
                         ),
                       ],
                     ),
@@ -766,7 +757,7 @@ class EditTag extends StatefulWidget {
   void Function(Event) onSave;
   void Function(Event) onEdit;
 
-  EditTag({required this.event, required this.onSave, required this.onEdit});
+  EditTag({super.key, required this.event, required this.onSave, required this.onEdit});
 
   @override
   State<StatefulWidget> createState() => _EditTag();
