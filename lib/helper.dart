@@ -21,9 +21,10 @@ String dateString(DateTime date) {
 }
 
 
-List<int> MONTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-List<String> DAYS = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
-List<String> MONTHS_NAME = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", ];
+// List<int> MONTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+List<int> months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+List<String> days = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
+List<String> monthsName = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", ];
 
 bool isLeapYear(int year) {
   return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
@@ -31,7 +32,7 @@ bool isLeapYear(int year) {
 
 int daysInMonth(int year, int month) {
   if (month != 2) {
-    return MONTHS[month - 1];
+    return months[month - 1];
   } else if (isLeapYear(year)) {
     return 29;
   } else {

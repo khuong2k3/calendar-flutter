@@ -4,11 +4,11 @@ import 'package:flutter_app/helper.dart';
 class Calendar extends StatefulWidget {
   // int year;
   // int month;
-  double width;
-  DateTime seleted;
-  void Function(DateTime)? onSelectDate;
+  final double width;
+  final DateTime seleted;
+  final void Function(DateTime)? onSelectDate;
 
-  Calendar({
+  const Calendar({
     super.key,
     required this.width,
     this.onSelectDate,
@@ -61,7 +61,7 @@ class _CalendarState extends State<Calendar> {
                   },
                   child: Icon(Icons.arrow_left),
                 ),
-                Text(MONTHS_NAME[_month - 1]),
+                Text(monthsName[_month - 1]),
                 TextButton(
                   style: TextButton.styleFrom(
                     minimumSize: Size.zero,
@@ -167,7 +167,7 @@ class MonthView extends StatelessWidget {
         ),
         itemBuilder: (context, index) {
           if (index < 7) {
-            return Card(child: Center(child: Text(DAYS[index])));
+            return Card(child: Center(child: Text(days[index])));
           }
           if (index < start + 7) {
             return Card();

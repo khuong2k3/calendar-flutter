@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/sizedwidget.dart';
 
 class MyDropdown extends StatefulWidget {
-  Widget content;
-  Widget child;
-  OverlayPortalController? controller;
-  Color? arrowColor;
+  final Widget content;
+  final Widget child;
+  final OverlayPortalController? controller;
+  final Color? arrowColor;
 
 
-  MyDropdown({
+  const MyDropdown({
     super.key,
     required this.content,
     required this.child,
@@ -93,7 +93,7 @@ class SelectionList extends StatelessWidget {
   final List<DropdownMenuItem> items;
   final void Function(dynamic) onSelected;
 
-  SelectionList({required this.onSelected, required this.items});
+  const SelectionList({super.key, required this.onSelected, required this.items});
 
   @override
   Widget build(BuildContext context) {

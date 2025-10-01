@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,10 +7,12 @@ import 'package:flutter_app/event_manager.dart';
 import 'package:flutter_app/helper.dart';
 import 'package:flutter_app/tooltip.dart';
 
-int MAX_RENDER = 200;
+const int maxRender = 200;
 
 class Calenderbig extends StatefulWidget {
-  const Calenderbig({super.key});
+  final EventManager events;
+
+  const Calenderbig({super.key, required this.events});
 
   @override
   State<Calenderbig> createState() => _CalendarBigState();
@@ -36,7 +37,7 @@ class _CalendarBigState extends State<Calenderbig> {
               mainAxisSpacing: 0.0,
             ),
             itemBuilder: (context, index) {
-              return Card(child: Center(child: Text(DAYS[index])));
+              return Card(child: Center(child: Text(days[index])));
             },
           ),
           Flexible(
@@ -44,7 +45,7 @@ class _CalendarBigState extends State<Calenderbig> {
             child: CalenderGrid(
               startDate: startRender,
               endDate: endRender,
-              events: [],
+              events: widget.events,
             ),
           ),
         ],
@@ -56,16 +57,16 @@ class _CalendarBigState extends State<Calenderbig> {
 class CalenderGrid extends StatefulWidget {
   final DateTime startDate;
   final DateTime endDate;
-  EventManager _events;
+  final EventManager events;
 
-  CalenderGrid({
+  const CalenderGrid({
     super.key,
     required this.startDate,
     required this.endDate,
-    required List<Event> events,
-  }): 
-    _events = EventManager(events);
+    required this.events,
+  });
 
+  @override
   State<CalenderGrid> createState() => _CalenderGrid();
 }
 
@@ -90,12 +91,12 @@ class _CalenderGrid extends State<CalenderGrid> {
       setState(() {
         if (currentPosition == 0.0) {
           startRender = startRender.subtract(Duration(days: 7));
-          if (endRender.difference(startRender) > Duration(days: MAX_RENDER)) {
+          if (endRender.difference(startRender) > Duration(days: maxRender)) {
             endRender.subtract(Duration(days: 7));
           }
         } else {
           endRender = endRender.add(Duration(days: 7));
-          if (endRender.difference(startRender) > Duration(days: MAX_RENDER)) {
+          if (endRender.difference(startRender) > Duration(days: maxRender)) {
             startRender.add(Duration(days: 7));
           }
         }
@@ -166,10 +167,10 @@ class _CalenderGrid extends State<CalenderGrid> {
         },
         onSave: (event) {
           _hideOverlay();
-          widget._events.replace(popupEvent.event, event);
+          widget.events.replace(popupEvent.event, event);
         },
         onDelete: (event) {
-          widget._events.remove(dateTime, event);
+          widget.events.remove(dateTime, event);
           _hideOverlay();
         },
       );
@@ -186,14 +187,14 @@ class _CalenderGrid extends State<CalenderGrid> {
           event: popupEvent.event,
           onSave: (event) {
             if (popupEvent.popupType == PopupType.addtag) {
-              widget._events.add(event);
+              widget.events.add(event);
             }
             _hideOverlay();
           },
           onEdit: (event) {
             setState(() {});
             if (popupEvent.popupType == PopupType.addtag) {
-              widget._events.add(event);
+              widget.events.add(event);
             }
             globalPopupEventNotifier.value = PopupEvent(
               event,
@@ -213,7 +214,7 @@ class _CalenderGrid extends State<CalenderGrid> {
         event: popupEvent.event,
         onOk: (event) {
           _overlayCtrl.hide();
-          widget._events.add(event);
+          widget.events.add(event);
           _hideOverlay();
         },
         onEdit: (event) {
@@ -286,7 +287,7 @@ class _CalenderGrid extends State<CalenderGrid> {
               itemBuilder: (context, index) {
                 DateTime itemDay = weekStart.add(Duration(days: index));
                 Color cardColor = Colors.black26;
-                List<Event> listEvents = widget._events.getDate(itemDay);
+                List<Event> listEvents = widget.events.getDate(itemDay);
                 List<Widget> tags = [];
 
                 for (int i = 0; i < min(listEvents.length, tagNum); i++) {
@@ -380,6 +381,7 @@ class EditDate extends StatefulWidget {
   final void Function(Event) onEdit;
 
   const EditDate({
+    super.key,
     required this.event,
     required this.onOk,
     required this.onEdit,
@@ -447,11 +449,11 @@ class _EditDate extends State<EditDate> {
 
 class EditDetail extends StatefulWidget {
   final Event event;
-  void Function() onExit;
-  void Function(Event) onSave;
-  void Function(Event) onDelete;
+  final void Function() onExit;
+  final void Function(Event) onSave;
+  final void Function(Event) onDelete;
 
-  EditDetail({
+  const EditDetail({
     super.key,
     required this.event,
     required this.onExit,
@@ -596,7 +598,9 @@ class _EditDetail extends State<EditDetail> {
                                 setState(() {
                                   isAllDay = value;
                                   _event.start = startOfDay(_event.start);
-                                  _event.end = _event.start.add(Duration(hours: 24));
+                                  _event.end = _event.start.add(
+                                    Duration(hours: 24),
+                                  );
                                 });
                               },
                             ),
@@ -606,9 +610,11 @@ class _EditDetail extends State<EditDetail> {
                           name: "Start",
                           date: _event.start,
                           onChange: (date) {
-                            setState(() { });
+                            setState(() {});
                             _event.start = date;
-                            if (_event.end.difference(_event.start).isNegative) {
+                            if (_event.end
+                                .difference(_event.start)
+                                .isNegative) {
                               _event.end = _event.start;
                             }
                           },
@@ -618,9 +624,11 @@ class _EditDetail extends State<EditDetail> {
                           disabled: isAllDay,
                           date: _event.end,
                           onChange: (date) {
-                            setState(() { });
+                            setState(() {});
                             widget.event.end = date;
-                            if (_event.end.difference(_event.start).isNegative) {
+                            if (_event.end
+                                .difference(_event.start)
+                                .isNegative) {
                               _event.start = _event.end;
                             }
                           },
@@ -737,7 +745,7 @@ class _EditDetail extends State<EditDetail> {
                           onPressed: () {
                             widget.onDelete(widget.event);
                           },
-                          child:  const Center(child: Text("Delete Event")),
+                          child: const Center(child: Text("Delete Event")),
                         ),
                       ],
                     ),
@@ -753,11 +761,16 @@ class _EditDetail extends State<EditDetail> {
 }
 
 class EditTag extends StatefulWidget {
-  Event event;
-  void Function(Event) onSave;
-  void Function(Event) onEdit;
+  final Event event;
+  final void Function(Event) onSave;
+  final void Function(Event) onEdit;
 
-  EditTag({super.key, required this.event, required this.onSave, required this.onEdit});
+  const EditTag({
+    super.key,
+    required this.event,
+    required this.onSave,
+    required this.onEdit,
+  });
 
   @override
   State<StatefulWidget> createState() => _EditTag();
@@ -839,10 +852,16 @@ class _EditTag extends State<EditTag> {
 class DropdownDateSelector extends StatefulWidget {
   final String name;
   final bool? disabled;
-  DateTime date;
-  void Function(DateTime) onChange;
+  final DateTime date;
+  final void Function(DateTime) onChange;
 
-  DropdownDateSelector({super.key, required this.name, required this.date, required this.onChange, this.disabled});
+  const DropdownDateSelector({
+    super.key,
+    required this.name,
+    required this.date,
+    required this.onChange,
+    this.disabled,
+  });
 
   @override
   State<StatefulWidget> createState() => _DropdownDateSelector();
@@ -890,10 +909,10 @@ class _DropdownDateSelector extends State<DropdownDateSelector> {
 }
 
 class DateInput extends StatefulWidget {
-  DateTime date;
-  void Function(DateTime) onChange;
+  final DateTime date;
+  final void Function(DateTime) onChange;
 
-  DateInput({super.key, required this.date, required this.onChange});
+  const DateInput({super.key, required this.date, required this.onChange});
 
   @override
   State<StatefulWidget> createState() => _DateInput();
@@ -928,9 +947,7 @@ class _DateInput extends State<DateInput> {
       _date = date;
       _controler.value = _controler.value.copyWith(
         text: newText,
-        selection: TextSelection.collapsed(
-          offset:  newText.length
-        ),
+        selection: TextSelection.collapsed(offset: newText.length),
         composing: TextRange.empty,
       );
     });
@@ -978,7 +995,9 @@ class _DateInput extends State<DateInput> {
                     DateTime(
                       splited[0],
                       ((splited.length > 1 ? splited[1] : 0) % 12) + 1,
-                      ((splited.length > 2 ? splited[2] : 0) % daysInMonth(splited[0], splited[1])) + 1,
+                      ((splited.length > 2 ? splited[2] : 0) %
+                              daysInMonth(splited[0], splited[1])) +
+                          1,
                       _date.hour,
                       _date.minute,
                     ),
@@ -1021,12 +1040,12 @@ class _DateInput extends State<DateInput> {
 }
 
 class NumberPicker extends StatefulWidget {
-  int value;
-  int? start;
-  int? end;
-  void Function(int) onChange;
+  final int value;
+  final int? start;
+  final int? end;
+  final void Function(int) onChange;
 
-  NumberPicker({
+  const NumberPicker({
     super.key,
     required this.value,
     this.start,
@@ -1054,23 +1073,20 @@ class _NumberPicker extends State<NumberPicker> {
   }
 
   void _changeValue(int value) {
-    setState(() {
-      widget.value = value;
-      if (widget.end != null && widget.value > (widget.end as int)) {
-        widget.value = widget.end as int;
-      }
+    if (widget.end != null && value > (widget.end as int)) {
+      value = widget.end as int;
+    }
 
-      if (widget.start != null && widget.value < (widget.start as int)) {
-        widget.value = widget.start as int;
-      }
-      String newValue = widget.value.toString();
-      _controller.value = _controller.value.copyWith(
-        text: newValue,
-        selection: TextSelection.collapsed(offset: newValue.length),
-        composing: TextRange.empty,
-      );
-    });
-    widget.onChange(widget.value);
+    if (widget.start != null && value < (widget.start as int)) {
+      value = widget.start as int;
+    }
+    String newValue = value.toString();
+    _controller.value = _controller.value.copyWith(
+      text: newValue,
+      selection: TextSelection.collapsed(offset: newValue.length),
+      composing: TextRange.empty,
+    );
+    widget.onChange(value);
   }
 
   @override
@@ -1119,7 +1135,7 @@ class _NumberPicker extends State<NumberPicker> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             onPressed: () {
-              _changeValue(widget.value + 1);
+              _changeValue(widget.value - 1);
             },
             child: Icon(Icons.remove),
           ),

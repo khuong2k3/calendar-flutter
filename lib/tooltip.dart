@@ -1,7 +1,4 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_app/event_manager.dart';
 
 // class MyTooltip extends StatefulWidget {
 //   final Widget child; // The widget the tooltip will wrap (e.g., an Icon)
@@ -89,6 +86,7 @@ class TooltipWrapper extends StatefulWidget {
   final Size? boundingBox;
 
   const TooltipWrapper({
+    super.key,
     required this.child,
     required this.layerLink,
     required this.globalOffset,

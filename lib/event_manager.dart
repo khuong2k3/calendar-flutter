@@ -99,7 +99,7 @@ final globalEventNotifier = ValueNotifier<OverlayPortalController?>(null);
 final globalMouseNotifier = ValueNotifier<PointerDownEvent?>(null);
 
 class EventManager {
-  Map<DateTime, List<Event>> _events = {};
+  final Map<DateTime, List<Event>> _events = {};
 
   EventManager(List<Event> events) {
     for (Event event in events) {
