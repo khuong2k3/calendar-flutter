@@ -56,14 +56,15 @@ class _CalendarBigState extends State<Calenderbig> {
 class CalenderGrid extends StatefulWidget {
   final DateTime startDate;
   final DateTime endDate;
-  final List<Event> events;
+  EventManager _events;
 
-  const CalenderGrid({
+  CalenderGrid({
     super.key,
     required this.startDate,
     required this.endDate,
-    required this.events,
-  });
+    required List<Event> events,
+  }): 
+    _events = EventManager(events);
 
   State<CalenderGrid> createState() => _CalenderGrid();
 }
@@ -506,18 +507,8 @@ class _EditDetail extends State<EditDetail> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      // elevation: 100,
-      // insetPadding: const EdgeInsets.all(100),
-      // padding: const EdgeInsets.all(100),
-      // decoration: BoxDecoration(
-      //   color: Colors.black12,
-      //   boxShadow: [BoxShadow(color: Theme.of(context).shadowColor)],
-      //   borderRadius: BorderRadius.all(Radius.circular(10)),
-      // ),
       child: Container(
-        // height: 100,
         decoration: BoxDecoration(
-          // boxShadow: [BoxShadow(color: Theme.of(context).cardColor)],
           borderRadius: BorderRadius.all(Radius.circular(10)),
         ),
         child: Column(
@@ -559,7 +550,7 @@ class _EditDetail extends State<EditDetail> {
                           widget.event.notes = _notesControler.value.text;
                           widget.onSave(widget.event);
                         },
-                        child: Text("Save"),
+                        child: const Text("Save"),
                       ),
                     ],
                   ),
@@ -624,11 +615,10 @@ class _EditDetail extends State<EditDetail> {
                           name: "Start",
                           date: widget.event.start,
                           onChange: (date) {
+                            setState(() { });
                             widget.event.start = date;
                             if (widget.event.end.difference(widget.event.start).isNegative) {
-                              setState(() {
-                                widget.event.end = widget.event.start;
-                              });
+                              widget.event.end = widget.event.start;
                             }
                           },
                         ),
@@ -637,11 +627,10 @@ class _EditDetail extends State<EditDetail> {
                           disabled: isAllDay,
                           date: widget.event.end,
                           onChange: (date) {
+                            setState(() { });
                             widget.event.end = date;
                             if (widget.event.end.difference(widget.event.start).isNegative) {
-                              setState(() {
-                                widget.event.start = widget.event.end;
-                              });
+                              widget.event.start = widget.event.end;
                             }
                           },
                         ),
@@ -733,7 +722,7 @@ class _EditDetail extends State<EditDetail> {
                           borderRadius: BorderRadius.all(Radius.circular(20)),
                         ),
                         child: Center(
-                          child: Text(
+                          child: const Text(
                             "Reminders",
                             style: TextStyle(fontSize: 15),
                           ),
@@ -757,7 +746,7 @@ class _EditDetail extends State<EditDetail> {
                           onPressed: () {
                             widget.onDelete(widget.event);
                           },
-                          child: Center(child: Text("Delete Event")),
+                          child: Center(child: const Text("Delete Event")),
                         ),
                       ],
                     ),
@@ -827,7 +816,7 @@ class _EditTag extends State<EditTag> {
                     onPressed: () {
                       widget.onSave(widget.event);
                     },
-                    child: Text("Save"),
+                    child: const Text("Save"),
                   ),
                 ],
               ),

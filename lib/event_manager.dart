@@ -87,3 +87,50 @@ final globalPopupEventNotifier = ValueNotifier<PopupEvent?>(null);
 final globalEventNotifier = ValueNotifier<OverlayPortalController?>(null);
 
 final globalMouseNotifier = ValueNotifier<PointerDownEvent?>(null);
+
+class EventManager {
+  Map<DateTime, List<Event>> _events = {};
+
+  EventManager(List<Event> events) {
+    for (Event event in events) {
+      DateTime date = startOfDay(event.start);
+      List<Event>? eventsList = _events[date];
+      if (eventsList != null) {
+        eventsList.add(event);
+      } else {
+        _events[date] = [event];
+      }
+    }
+  }
+
+  void add(Event event) {
+    insertMapDefault(_events, startOfDay(event.start), (events) {
+      events.add(event);
+    }, [event]);
+  }
+
+  List<Event> getDate(DateTime date) {
+    return _events[startOfDay(date)] ?? [];
+  }
+
+  void update(DateTime date) {
+    List<Event> events = getDate(date);
+    date = startOfDay(date);
+
+    List<Event> changeDate = events.where((event) => event.start != date).toList();
+
+    if (changeDate.isNotEmpty) {
+      List<Event> newEvents = events.where((event) => event.start == date).toList();
+      _events[date] = newEvents;
+      for (Event event in changeDate) {
+        add(event);
+      }
+    } 
+  }
+}
+
+
+
+
+
+
