@@ -1,19 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/sizedwidget.dart';
 
+// class MyDropdown2 extends StatelessWidget {
+//   final Widget content;
+//   final Widget child;
+//   final OverlayPortalController controller;
+//   final Color? arrowColor;
+//   final Offset? offset;
+//
+//   const MyDropdown2({
+//     super.key,
+//     required this.content,
+//     required this.child,
+//     this.arrowColor,
+//     this.offset,
+//     OverlayPortalController? controller,
+//   }): controller = controller ?? const OverlayPortalController();
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     throw UnimplementedError();
+//   }
+// }
+
 class MyDropdown extends StatefulWidget {
   final Widget content;
   final Widget child;
-  final OverlayPortalController? controller;
+  final OverlayPortalController controller;
   final Color? arrowColor;
-
+  final Offset? offset;
 
   const MyDropdown({
     super.key,
     required this.content,
     required this.child,
-    this.controller,
+    required this.controller,
     this.arrowColor,
+    this.offset,
   });
 
   @override
@@ -21,7 +44,7 @@ class MyDropdown extends StatefulWidget {
 }
 
 class _Dropdown extends State<MyDropdown> {
-  late OverlayPortalController _overlayCtrl;
+  // late OverlayPortalController _overlayCtrl;
   final _layerLink = LayerLink();
 
   Size _size = Size(0, 0);
@@ -30,19 +53,13 @@ class _Dropdown extends State<MyDropdown> {
   @override
   void initState() {
     super.initState();
-
-    if (widget.controller != null) {
-      _overlayCtrl = widget.controller as OverlayPortalController;
-    } else {
-      _overlayCtrl = OverlayPortalController();
-    }
   }
 
   Widget _dropdownBuilder(BuildContext context) {
     return CompositedTransformFollower(
       offset: Offset(
-        (_size.width - _sizeContent.width) / 2,
-        _size.height + arrowHeight,
+        (_size.width - _sizeContent.width) / 2 + (widget.offset?.dx ?? 0),
+        _size.height + arrowHeight + (widget.offset?.dy ?? 0),
       ),
       link: _layerLink,
       child: Align(
@@ -71,12 +88,10 @@ class _Dropdown extends State<MyDropdown> {
     return CompositedTransformTarget(
       link: _layerLink,
       child: OverlayPortal(
-        controller: _overlayCtrl,
+        controller: widget.controller,
         overlayChildBuilder: _dropdownBuilder,
-        child: Listener(
-          onPointerDown: (_) {
-            _overlayCtrl.toggle();
-          },
+        child: InkWell(
+          onTap: widget.controller.toggle,
           child: Sizedwidget(
             onSize: (size) {
               _size = size;

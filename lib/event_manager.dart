@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_app/helper.dart';
+import 'package:uuid/uuid.dart';
 
 // Defines the event data we want to broadcast
 class GlobalMouseEvent {
@@ -21,7 +22,10 @@ class PopupEvent {
 
 enum EventType { holiday, user }
 
+Uuid uuidGen = Uuid();
+
 class Event {
+  String id;
   String name;
   String location;
   DateTime start;
@@ -36,12 +40,18 @@ class Event {
     required DateTime start,
     required this.eventType,
     required this.repeat,
-  }) : start = startOfDay(start),
+  }) : id = uuidGen.v4(),
+       start = startOfDay(start),
        end = startOfDay(start).add(const Duration(hours: 24)),
        location = "";
 
   Event copy() {
-    Event event = Event(name: name, start: start, eventType: eventType, repeat: repeat);
+    Event event = Event(
+      name: name,
+      start: start,
+      eventType: eventType,
+      repeat: repeat,
+    );
     event.location = location;
     event.end = end;
     event.reminders = reminders.toList();
@@ -49,9 +59,21 @@ class Event {
 
     return event;
   }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    Event? otherEvent = other as Event?;
+    if (otherEvent != null) {
+      return id == otherEvent.id;
+    }
+    return false;
+  }
 }
 
-enum PopupType { edit, detail, edittag, addtag }
+enum PopupType { editdetail, edittag, addtag, adddetail }
 
 enum Repeat {
   no,
@@ -100,6 +122,8 @@ final globalMouseNotifier = ValueNotifier<PointerDownEvent?>(null);
 
 class EventManager {
   final Map<DateTime, List<Event>> _events = {};
+  final List<void Function()> listeners = [];
+  // void Function()? onChange;
 
   EventManager(List<Event> events) {
     for (Event event in events) {
@@ -113,10 +137,48 @@ class EventManager {
     }
   }
 
-  void add(Event event) {
+  void addListener(void Function() listener) {
+    listeners.add(listener);
+  }
+
+  void _add(Event event) {
     insertMapDefault(_events, startOfDay(event.start), (events) {
       events.add(event);
     }, [event]);
+  }
+
+  void _update(DateTime date) {
+    List<Event> events = getDate(date);
+    date = startOfDay(date);
+
+    List<Event> changeDate = events
+        .where((event) => event.start != date)
+        .toList();
+
+    if (changeDate.isNotEmpty) {
+      List<Event> newEvents = events
+          .where((event) => event.start == date)
+          .toList();
+      _events[date] = newEvents;
+      for (Event event in changeDate) {
+        _add(event);
+      }
+    }
+  }
+
+  void _remove(DateTime date, Event event) {
+    _events[startOfDay(date)]?.remove(event);
+  }
+
+  void onChange() {
+    for (void Function() listener in listeners) {
+      listener();
+    }
+  }
+
+  void add(Event event) {
+    _add(event);
+    onChange();
   }
 
   List<Event> getDate(DateTime date) {
@@ -124,22 +186,13 @@ class EventManager {
   }
 
   void update(DateTime date) {
-    List<Event> events = getDate(date);
-    date = startOfDay(date);
-
-    List<Event> changeDate = events.where((event) => event.start != date).toList();
-
-    if (changeDate.isNotEmpty) {
-      List<Event> newEvents = events.where((event) => event.start == date).toList();
-      _events[date] = newEvents;
-      for (Event event in changeDate) {
-        add(event);
-      }
-    } 
+    _update(date);
+    onChange();
   }
 
   void remove(DateTime date, Event event) {
-    _events[startOfDay(date)]?.remove(event);
+    _remove(date, event);
+    onChange();
   }
 
   void replace(Event oldEvent, Event newEvent) {
@@ -150,12 +203,7 @@ class EventManager {
       events[index] = newEvent;
     }
 
-    update(dateTime);
+    _update(dateTime);
+    onChange();
   }
 }
-
-
-
-
-
-

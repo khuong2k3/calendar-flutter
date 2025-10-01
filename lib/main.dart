@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/calendar.dart';
 import 'package:flutter_app/calenderbig.dart';
+import 'package:flutter_app/dropdown.dart';
 import 'package:flutter_app/event_manager.dart';
 import 'package:flutter_app/helper.dart';
 
@@ -8,15 +9,54 @@ void main() {
   runApp(const MyApp());
 }
 
-// String name = 'asdhfj';
-// int number = 1;
-// double number2 = 2.3;
-// List myList = ['zsdf', 'asdfsadf'];
-// Map<String, dynamic> myMap = {'String': 'strint', "sdfd": 888};
-// dynamic sdfsdf = 33;
-
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<StatefulWidget> createState() => _MyApp();
+}
+
+class _MyApp extends State<MyApp> {
+  DateTime _selectedDate = startOfDay(DateTime.now());
+  final EventManager _eventManager = EventManager([]);
+
+  // final OverlayPortalController _overlayCtrl = OverlayPortalController();
+  // Widget _createTag(BuildContext context, Event event) {
+  //
+  //   return MyDropdown(
+  //     controller: _overlayCtrl,
+  //     offset: Offset(20, 0),
+  //     content: EditTag(
+  //       event: event,
+  //       onSave: (event) {
+  //         _overlayCtrl.hide();
+  //       },
+  //       onEdit: (event) {
+  //       },
+  //     ),
+  //     arrowColor: Theme.of(context).dividerColor,
+  //     child: Container(
+  //       height: 20,
+  //       padding: EdgeInsets.only(left: 10, right: 10),
+  //       decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+  //       alignment: AlignmentGeometry.centerLeft,
+  //       child: Text(event.name),
+  //     ),
+  //   );
+  // }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _eventManager.addListener(() {
+      setState(() { });
+    });
+  }
 
   // This widget is the root of your application.
   @override
@@ -47,17 +87,49 @@ class MyApp extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 10.0,
             children: [
-              Column(
-                children: [
-                  Calendar(
-                    seleted: startOfDay(DateTime.now()),
-                    width: 280,
-                  ),
-                ],
+              SizedBox(
+                width: 280,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Calendar(
+                      seleted: startOfDay(DateTime.now()),
+                      width: 280,
+                      onSelectDate: (date) {
+                        setState(() {
+                          _selectedDate = date;
+                        });
+                      },
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(10), 
+                      child: Column(
+                        spacing: 10,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Events ${_selectedDate.year}/${_selectedDate.month}/${_selectedDate.day}:"),
+                          Column(
+                            spacing: 5,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: _eventManager.getDate(_selectedDate).map((event) {
+                              return Tags(
+                                event: event,
+                                onSave: (newEvent) {
+                                  setState(() {
+                                    _eventManager.replace(event, newEvent);
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      )
+                    ),
+                  ],
+                ),
               ),
-              Calenderbig(
-                events: EventManager([]),
-              ),
+              Calenderbig(events: _eventManager),
             ],
           ),
         ),
@@ -83,79 +155,47 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class Tags extends StatelessWidget {
+  final OverlayPortalController _overlayCtrl = OverlayPortalController();
+  final Event event;
+  final void Function(Event) onSave;
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  // int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      // _counter++;
-    });
-  }
+  Tags({
+    super.key,
+    required this.event,
+    required this.onSave,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+    return MyDropdown(
+      controller: _overlayCtrl,
+      offset: Offset(20, 0),
+      content: EditTag(
+        event: event,
+        onSave: (newEvent) {
+          onSave(newEvent);
+          _overlayCtrl.hide();
+        },
+        onEdit: (event) {
+        },
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Row(
-          children: [
-            Container(
-              width: 100.0,
-              height: 100.0,
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25.0),
-                color: Colors.red,
-              ),
-              child: Text("Hello", style: TextStyle(color: Colors.amber)),
-            ),
-          ],
-        ),
+      arrowColor: Theme.of(context).dividerColor,
+      child: Container(
+        height: 20,
+        padding: EdgeInsets.only(left: 10, right: 10),
+        decoration: BoxDecoration(color: Theme.of(context).dividerColor),
+        alignment: AlignmentGeometry.centerLeft,
+        child: Text(event.name),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
+
+
+
+
+// class  extends StatelessWidget {
+//   ({super.key});
+// }
+
