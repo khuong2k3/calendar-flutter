@@ -120,12 +120,14 @@ class _CalenderGrid extends State<CalenderGrid> {
   @override
   void initState() {
     super.initState();
-    setState(() {
-      startRender = widget.startDate;
-      endRender = widget.endDate;
-    });
+    startRender = widget.startDate;
+    endRender = widget.endDate;
 
     controller.addListener(_onScroll);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onChangeSize();
+    });
   }
 
   void _onChangeSize() {
@@ -155,9 +157,6 @@ class _CalenderGrid extends State<CalenderGrid> {
 
   void _hideOverlay() {
     _overlayCtrl.hide();
-    setState(() {
-      scrollPhysics = null;
-    });
   }
 
   Widget _buildOverlay(BuildContext context) {
@@ -175,6 +174,7 @@ class _CalenderGrid extends State<CalenderGrid> {
         },
         onSave: (event) {
           _hideOverlay();
+
           if (popupEvent.popupType == PopupType.adddetail) {
             widget.events.add(event);
           } else {
@@ -237,9 +237,6 @@ class _CalenderGrid extends State<CalenderGrid> {
         },
         onEdit: (event) {
           popupEvent.popupType = PopupType.editdetail;
-          setState(() {
-            scrollPhysics = null;
-          });
         },
       ),
     );
@@ -265,10 +262,6 @@ class _CalenderGrid extends State<CalenderGrid> {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onChangeSize();
-    });
-
     DateTime weekStart = startRender.subtract(
       Duration(days: startRender.weekday),
     );
@@ -289,11 +282,11 @@ class _CalenderGrid extends State<CalenderGrid> {
         child: OverlayPortal(
           controller: _overlayCtrl,
           overlayChildBuilder: _buildOverlay,
-          child: SingleChildScrollView(
+          child: SizedBox(
             key: _keySc,
-            controller: controller,
-            physics: scrollPhysics,
             child: GridView.builder(
+              controller: controller,
+              physics: scrollPhysics,
               key: _key,
               shrinkWrap: true,
               itemCount: dayDiff,
@@ -308,9 +301,6 @@ class _CalenderGrid extends State<CalenderGrid> {
                 List<Event> listEvents = widget.events.getDate(itemDay);
                 List<Widget> tags = [];
 
-                // for (Event event in listEvents.getRange(0, min(tagNum, listEvents.length))) {
-                //   tags.add(_createTag(context, event));
-                // }
                 for (int i = 0; i < min(listEvents.length, tagNum); i++) {
                   tags.add(_createTag(context, listEvents[i]));
                 }
@@ -631,7 +621,7 @@ class _EditDetail extends State<EditDetail> {
                           name: "Start",
                           date: _event.start,
                           onChange: (date) {
-                            setState(() {});
+                            // setState(() {});
                             _event.start = date;
                             if (_event.end
                                 .difference(_event.start)
@@ -645,8 +635,8 @@ class _EditDetail extends State<EditDetail> {
                           disabled: isAllDay,
                           date: _event.end,
                           onChange: (date) {
-                            setState(() {});
-                            widget.event.end = date;
+                            // setState(() {});
+                            _event.end = date;
                             if (_event.end
                                 .difference(_event.start)
                                 .isNegative) {
@@ -681,7 +671,7 @@ class _EditDetail extends State<EditDetail> {
                     SizedBox(height: 10),
                     const Text("Reminders:", style: TextStyle(fontSize: 20)),
                     Column(
-                      children: widget.event.reminders.map((reminder) {
+                      children: _event.reminders.map((reminder) {
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -689,7 +679,7 @@ class _EditDetail extends State<EditDetail> {
                             TextButton(
                               onPressed: () {
                                 setState(() {
-                                  widget.event.reminders.remove(reminder);
+                                  _event.reminders.remove(reminder);
                                 });
                               },
                               child: Icon(Icons.cancel),
@@ -741,10 +731,15 @@ class _EditDetail extends State<EditDetail> {
                           color: Colors.black87,
                           borderRadius: BorderRadius.all(Radius.circular(20)),
                         ),
-                        child: Center(
-                          child: const Text(
-                            "Reminders",
-                            style: TextStyle(fontSize: 15),
+                        child: InkWell(
+                          onTap: () {
+                            _controllerReminders.toggle();
+                          }, 
+                          child: const Center(
+                            child: Text(
+                              "Reminders",
+                              style: TextStyle(fontSize: 15),
+                            ),
                           ),
                         ),
                       ),
@@ -902,7 +897,7 @@ class _DropdownDateSelector extends State<DropdownDateSelector> {
           Text(widget.name),
           TextButton(
             onPressed: () {
-              if (widget.disabled == null || widget.disabled == false) {
+              if (widget.disabled == null || widget.disabled == true) {
                 setState(() {
                   _open = !_open;
                 });
@@ -944,6 +939,7 @@ class DateInput extends StatefulWidget {
 class _DateInput extends State<DateInput> {
   late TextEditingController _controler;
   late DateTime _date;
+  final _dropdownCtrl = OverlayPortalController();
   // late int _hour;
   // late int _minute;
 
@@ -954,8 +950,6 @@ class _DateInput extends State<DateInput> {
       text: "${widget.date.year}/${widget.date.month}/${widget.date.day}",
     );
     _date = widget.date;
-    // _hour = widget.date.hour;
-    // _minute = widget.date.minute;
   }
 
   @override
@@ -984,7 +978,7 @@ class _DateInput extends State<DateInput> {
       spacing: 10,
       children: [
         MyDropdown(
-          controller: OverlayPortalController(),
+          controller: _dropdownCtrl,
           arrowColor: Theme.of(context).shadowColor,
           content: Container(
             padding: EdgeInsets.only(left: 10, right: 10),
@@ -1003,6 +997,9 @@ class _DateInput extends State<DateInput> {
           child: SizedBox(
             width: 150,
             child: TextField(
+              onTap: () {
+                _dropdownCtrl.toggle();
+              },
               textAlign: TextAlign.center,
               keyboardType: TextInputType.datetime,
               controller: _controler,

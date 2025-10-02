@@ -7,12 +7,14 @@ class Calendar extends StatefulWidget {
   final double width;
   final DateTime seleted;
   final void Function(DateTime)? onSelectDate;
+  final bool? showToday;
 
   const Calendar({
     super.key,
     required this.width,
     this.onSelectDate,
     required this.seleted,
+    this.showToday,
   });
 
   @override
@@ -114,6 +116,7 @@ class _CalendarState extends State<Calendar> {
           year: _year,
           month: _month,
           seleted: widget.seleted,
+          showToday: widget.showToday,
           onSelectDate: (date) {
             if (widget.onSelectDate != null) {
               (widget.onSelectDate as void Function(DateTime))(date);
@@ -131,6 +134,7 @@ class MonthView extends StatelessWidget {
   final int month;
   final DateTime seleted;
   final void Function(DateTime) onSelectDate;
+  final bool? showToday;
 
   const MonthView({
     super.key,
@@ -139,6 +143,7 @@ class MonthView extends StatelessWidget {
     required this.month,
     required this.onSelectDate,
     required this.seleted,
+    this.showToday,
   });
 
   @override
@@ -149,6 +154,7 @@ class MonthView extends StatelessWidget {
     double cellSize = width / 7;
     double height =
         (((dayInMonth + start) / 7.0).ceil() + 1) * cellSize.toDouble();
+    DateTime today = startOfDay(DateTime.now());
 
     return Container(
       decoration: BoxDecoration(
@@ -180,6 +186,8 @@ class MonthView extends StatelessWidget {
 
           if (currentDate == seleted) {
             cardColor = Theme.of(context).hintColor;
+          } else if (currentDate == today && showToday == true) {
+            cardColor = Theme.of(context).highlightColor;
           }
 
           return Card(

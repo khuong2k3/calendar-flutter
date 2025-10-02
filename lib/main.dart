@@ -17,53 +17,13 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyApp extends State<MyApp> {
-  DateTime _selectedDate = startOfDay(DateTime.now());
   final EventManager _eventManager = EventManager([]);
 
-  // final OverlayPortalController _overlayCtrl = OverlayPortalController();
-  // Widget _createTag(BuildContext context, Event event) {
-  //
-  //   return MyDropdown(
-  //     controller: _overlayCtrl,
-  //     offset: Offset(20, 0),
-  //     content: EditTag(
-  //       event: event,
-  //       onSave: (event) {
-  //         _overlayCtrl.hide();
-  //       },
-  //       onEdit: (event) {
-  //       },
-  //     ),
-  //     arrowColor: Theme.of(context).dividerColor,
-  //     child: Container(
-  //       height: 20,
-  //       padding: EdgeInsets.only(left: 10, right: 10),
-  //       decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-  //       alignment: AlignmentGeometry.centerLeft,
-  //       child: Text(event.name),
-  //     ),
-  //   );
-  // }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _eventManager.addListener(() {
-      setState(() { });
-    });
-  }
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'Calendar App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,
@@ -87,48 +47,7 @@ class _MyApp extends State<MyApp> {
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 10.0,
             children: [
-              SizedBox(
-                width: 280,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Calendar(
-                      seleted: startOfDay(DateTime.now()),
-                      width: 280,
-                      onSelectDate: (date) {
-                        setState(() {
-                          _selectedDate = date;
-                        });
-                      },
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(10), 
-                      child: Column(
-                        spacing: 10,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Events ${_selectedDate.year}/${_selectedDate.month}/${_selectedDate.day}:"),
-                          Column(
-                            spacing: 5,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _eventManager.getDate(_selectedDate).map((event) {
-                              return Tags(
-                                event: event,
-                                onSave: (newEvent) {
-                                  setState(() {
-                                    _eventManager.replace(event, newEvent);
-                                  });
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      )
-                    ),
-                  ],
-                ),
-              ),
+              EventList(date: DateTime.now(), events: _eventManager),
               Calenderbig(events: _eventManager),
             ],
           ),
@@ -192,6 +111,80 @@ class Tags extends StatelessWidget {
   }
 }
 
+
+class EventList extends StatefulWidget {
+  final DateTime date;
+  final EventManager events;
+
+  const EventList({
+    super.key,
+    required this.date,
+    required this.events,
+  });
+
+  @override
+  State<StatefulWidget> createState() => _EventList();
+}
+
+class _EventList extends State<EventList> {
+  late DateTime _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = startOfDay(widget.date);
+    widget.events.addListener(() {
+      setState(() { });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 280,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Calendar(
+            seleted: _selectedDate,
+            showToday: true,
+            width: 280,
+            onSelectDate: (date) {
+              setState(() {
+                _selectedDate = date;
+              });
+            },
+          ),
+          Padding(
+            padding: EdgeInsets.all(10), 
+            child: Column(
+              spacing: 10,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Events ${_selectedDate.year}/${_selectedDate.month}/${_selectedDate.day}:"),
+                Column(
+                  spacing: 5,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widget.events.getDate(_selectedDate).map((event) {
+                    return Tags(
+                      event: event,
+                      onSave: (newEvent) {
+                        setState(() {
+                          widget.events.replace(event, newEvent);
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ],
+            )
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 
 

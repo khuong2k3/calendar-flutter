@@ -52,6 +52,7 @@ class Event {
       eventType: eventType,
       repeat: repeat,
     );
+    event.id = id;
     event.location = location;
     event.end = end;
     event.reminders = reminders.toList();

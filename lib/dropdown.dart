@@ -44,7 +44,7 @@ class MyDropdown extends StatefulWidget {
 }
 
 class _Dropdown extends State<MyDropdown> {
-  // late OverlayPortalController _overlayCtrl;
+  // final OverlayPortalController _overlayCtrl = OverlayPortalController();
   final _layerLink = LayerLink();
 
   Size _size = Size(0, 0);
@@ -66,7 +66,7 @@ class _Dropdown extends State<MyDropdown> {
         alignment: Alignment.topLeft,
         child: CustomPaint(
           painter: TooltipPainter(
-            color: widget.arrowColor == null ? Colors.black87 : widget.arrowColor as Color, 
+            color: widget.arrowColor == null ? Theme.of(context).primaryColor : widget.arrowColor as Color, 
             alignment: Alignment.topLeft,
             offset: Offset(0.0, 0.0),
           ),
@@ -90,14 +90,11 @@ class _Dropdown extends State<MyDropdown> {
       child: OverlayPortal(
         controller: widget.controller,
         overlayChildBuilder: _dropdownBuilder,
-        child: InkWell(
-          onTap: widget.controller.toggle,
-          child: Sizedwidget(
-            onSize: (size) {
-              _size = size;
-            },
-            child: widget.child,
-          ),
+        child: Sizedwidget(
+          onSize: (size) {
+            _size = size;
+          },
+          child: widget.child,
         ),
       ),
     );
