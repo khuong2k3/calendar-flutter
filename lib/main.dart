@@ -125,16 +125,20 @@ class EventList extends StatefulWidget {
 class _EventList extends State<EventList> {
   late DateTime _selectedDate;
 
+  bool _onChange(EventInfoChange info) {
+    if (startOfDay(info.date) == _selectedDate && mounted) {
+        setState(() { });
+    }
+
+    return mounted;
+  }
+
   @override
   void initState() {
     super.initState();
     _selectedDate = startOfDay(widget.date);
-    widget.events.addListener((info) {
-      if (startOfDay(info.date) == _selectedDate && mounted) {
-        setState(() { });
-      }
-      return mounted;
-    });
+    widget.events.addListener(_onChange);
+
   }
 
   @override

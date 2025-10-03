@@ -156,7 +156,7 @@ class EventManager {
   }
 
   void _add(Event event) {
-    insertMapDefault(_events, startOfDay(event.start), (events) {
+    insertMapDefault(_events, _dateString(event.start), (events) {
       events.add(event);
     }, [event]);
   }
@@ -174,7 +174,7 @@ class EventManager {
       List<Event> newEvents = events
           .where((event) => event.start == date)
           .toList();
-      _events[dateString(date)] = newEvents;
+      _events[_dateString(date)] = newEvents;
       for (Event event in changeDate) {
         _add(event);
         changedDate.add(EventInfoChange(event.start));
@@ -185,7 +185,7 @@ class EventManager {
   }
 
   void _remove(DateTime date, Event event) {
-    _events[dateString(date)]?.remove(event);
+    _events[_dateString(date)]?.remove(event);
   }
 
   void onChange(EventInfoChange change) {
@@ -204,7 +204,7 @@ class EventManager {
   }
 
   List<Event> getDate(DateTime date) {
-    return _events[dateString(date)] ?? [];
+    return _events[_dateString(date)] ?? [];
   }
 
   void update(DateTime date) {
