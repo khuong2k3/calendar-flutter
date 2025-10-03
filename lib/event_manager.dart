@@ -1,4 +1,7 @@
 // event_manager.dart
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_app/helper.dart';
@@ -121,14 +124,24 @@ final globalEventNotifier = ValueNotifier<OverlayPortalController?>(null);
 
 final globalMouseNotifier = ValueNotifier<PointerDownEvent?>(null);
 
+class EventInfoChange {
+  final DateTime date;
+
+  const EventInfoChange(this.date);
+}
+
 class EventManager {
-  final Map<DateTime, List<Event>> _events = {};
-  final List<void Function()> listeners = [];
+  final Map<String, List<Event>> _events = {};
+  List<bool Function(EventInfoChange)> listeners = [];
   // void Function()? onChange;
+
+  String _dateString(DateTime date) {
+    return "${date.year}:${date.month}:${date.day}";
+  }
 
   EventManager(List<Event> events) {
     for (Event event in events) {
-      DateTime date = startOfDay(event.start);
+      String date = _dateString(event.start);
       List<Event>? eventsList = _events[date];
       if (eventsList != null) {
         eventsList.add(event);
@@ -138,7 +151,7 @@ class EventManager {
     }
   }
 
-  void addListener(void Function() listener) {
+  void addListener(bool Function(EventInfoChange) listener) {
     listeners.add(listener);
   }
 
@@ -148,7 +161,7 @@ class EventManager {
     }, [event]);
   }
 
-  void _update(DateTime date) {
+  List<EventInfoChange> _update(DateTime date) {
     List<Event> events = getDate(date);
     date = startOfDay(date);
 
@@ -156,44 +169,53 @@ class EventManager {
         .where((event) => event.start != date)
         .toList();
 
+    List<EventInfoChange> changedDate = [];
     if (changeDate.isNotEmpty) {
       List<Event> newEvents = events
           .where((event) => event.start == date)
           .toList();
-      _events[date] = newEvents;
+      _events[dateString(date)] = newEvents;
       for (Event event in changeDate) {
         _add(event);
+        changedDate.add(EventInfoChange(event.start));
       }
     }
+
+    return changedDate;
   }
 
   void _remove(DateTime date, Event event) {
-    _events[startOfDay(date)]?.remove(event);
+    _events[dateString(date)]?.remove(event);
   }
 
-  void onChange() {
-    for (void Function() listener in listeners) {
-      listener();
+  void onChange(EventInfoChange change) {
+    List<bool Function(EventInfoChange)> newList = [];
+    for (bool Function(EventInfoChange) listener in listeners) {
+      if (listener(change)) {
+        newList.add(listener);
+      }
     }
+    listeners = newList;
   }
 
   void add(Event event) {
     _add(event);
-    onChange();
+    onChange(EventInfoChange(event.start));
   }
 
   List<Event> getDate(DateTime date) {
-    return _events[startOfDay(date)] ?? [];
+    return _events[dateString(date)] ?? [];
   }
 
   void update(DateTime date) {
-    _update(date);
-    onChange();
+    for (EventInfoChange event in _update(date)) {
+      onChange(event);
+    }
   }
 
   void remove(DateTime date, Event event) {
     _remove(date, event);
-    onChange();
+    onChange(EventInfoChange(date));
   }
 
   void replace(Event oldEvent, Event newEvent) {
@@ -204,7 +226,11 @@ class EventManager {
       events[index] = newEvent;
     }
 
-    _update(dateTime);
-    onChange();
+    update(dateTime);
+  }
+
+  void save() {
+    File file = File("current.json");
+    file.writeAsString(jsonEncode(_events));
   }
 }

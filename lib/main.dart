@@ -9,18 +9,13 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<StatefulWidget> createState() => _MyApp();
-}
-
-class _MyApp extends State<MyApp> {
-  final EventManager _eventManager = EventManager([]);
-
-  @override
   Widget build(BuildContext context) {
+    final EventManager eventManager = EventManager([]);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Calendar App',
@@ -47,8 +42,8 @@ class _MyApp extends State<MyApp> {
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 10.0,
             children: [
-              EventList(date: DateTime.now(), events: _eventManager),
-              Calenderbig(events: _eventManager),
+              EventList(date: DateTime.now(), events: eventManager),
+              Calenderbig(events: eventManager),
             ],
           ),
         ),
@@ -68,8 +63,6 @@ class _MyApp extends State<MyApp> {
         //   ],
         // ),
       ),
-
-      // const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
@@ -100,13 +93,16 @@ class Tags extends StatelessWidget {
         },
       ),
       arrowColor: Theme.of(context).dividerColor,
-      child: Container(
-        height: 20,
-        padding: EdgeInsets.only(left: 10, right: 10),
-        decoration: BoxDecoration(color: Theme.of(context).dividerColor),
-        alignment: AlignmentGeometry.centerLeft,
-        child: Text(event.name),
-      ),
+      child: InkWell(
+        onTap: _overlayCtrl.toggle,
+        child: Container(
+          height: 20,
+          padding: EdgeInsets.only(left: 10, right: 10),
+          decoration: BoxDecoration(color: Theme.of(context).dividerColor),
+          alignment: AlignmentGeometry.centerLeft,
+          child: Text(event.name),
+        ),
+      )
     );
   }
 }
@@ -133,8 +129,11 @@ class _EventList extends State<EventList> {
   void initState() {
     super.initState();
     _selectedDate = startOfDay(widget.date);
-    widget.events.addListener(() {
-      setState(() { });
+    widget.events.addListener((info) {
+      if (startOfDay(info.date) == _selectedDate && mounted) {
+        setState(() { });
+      }
+      return mounted;
     });
   }
 
@@ -155,6 +154,12 @@ class _EventList extends State<EventList> {
               });
             },
           ),
+          // ElevatedButton(
+          //   onPressed: () {
+          //     widget.events.save();
+          //   },
+          //   child: const Text("save"),
+          // ),
           Padding(
             padding: EdgeInsets.all(10), 
             child: Column(

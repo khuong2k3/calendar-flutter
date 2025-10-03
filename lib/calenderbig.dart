@@ -5,6 +5,7 @@ import 'package:flutter_app/calendar.dart';
 import 'package:flutter_app/dropdown.dart';
 import 'package:flutter_app/event_manager.dart';
 import 'package:flutter_app/helper.dart';
+import 'package:flutter_app/sizedwidget.dart';
 import 'package:flutter_app/tooltip.dart';
 
 const int maxRender = 200;
@@ -25,9 +26,6 @@ class _CalendarBigState extends State<Calenderbig> {
   @override
   void initState() {
     super.initState();
-    widget.events.addListener(() {
-      setState(() { });
-    });
   }
 
   @override
@@ -79,11 +77,11 @@ class CalenderGrid extends StatefulWidget {
 }
 
 class _CalenderGrid extends State<CalenderGrid> {
-  final GlobalKey _key = GlobalKey();
-  final GlobalKey _keySc = GlobalKey();
+  // final GlobalKey _key = GlobalKey();
+  // final GlobalKey _keySc = GlobalKey();
   Size? scrollViewSize;
+  double _currentWidth = 0.01;
 
-  double _currentWidth = 0.0;
   ScrollController controller = ScrollController(
     initialScrollOffset: 0.001,
     keepScrollOffset: false,
@@ -124,32 +122,8 @@ class _CalenderGrid extends State<CalenderGrid> {
     endRender = widget.endDate;
 
     controller.addListener(_onScroll);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onChangeSize();
-    });
   }
 
-  void _onChangeSize() {
-    final RenderBox? renderBox =
-        _key.currentContext?.findRenderObject() as RenderBox?;
-
-    if (renderBox != null && renderBox.hasSize) {
-      if (renderBox.size.width != _currentWidth) {
-        setState(() {
-          _currentWidth = renderBox.size.width;
-          scrollViewSize =
-              (_keySc.currentContext?.findRenderObject() as RenderBox?)?.size;
-        });
-      }
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onChangeSize();
-    });
-  }
-
-  // OverlayPortalController? _prevOverlay;
   final OverlayPortalController _overlayCtrl = OverlayPortalController();
   final _layerLink = LayerLink();
   Offset _popupOffset = Offset(0, 0);
@@ -157,6 +131,7 @@ class _CalenderGrid extends State<CalenderGrid> {
 
   void _hideOverlay() {
     _overlayCtrl.hide();
+    scrollPhysics = null;
   }
 
   Widget _buildOverlay(BuildContext context) {
@@ -206,18 +181,19 @@ class _CalenderGrid extends State<CalenderGrid> {
             _hideOverlay();
           },
           onEdit: (event) {
-            setState(() {});
-            if (popupEvent.popupType == PopupType.addtag) {
-              globalPopupEventNotifier.value = PopupEvent(
-                event,
-                PopupType.adddetail,
-              );
-            } else {
-              globalPopupEventNotifier.value = PopupEvent(
-                event,
-                PopupType.editdetail,
-              );
-            }
+            setState(() {
+              if (popupEvent.popupType == PopupType.addtag) {
+                globalPopupEventNotifier.value = PopupEvent(
+                  event,
+                  PopupType.adddetail,
+                );
+              } else {
+                globalPopupEventNotifier.value = PopupEvent(
+                  event,
+                  PopupType.editdetail,
+                );
+              }
+            });
           },
         ),
       );
@@ -231,7 +207,6 @@ class _CalenderGrid extends State<CalenderGrid> {
       child: EditDate(
         event: popupEvent.event,
         onOk: (event) {
-          _overlayCtrl.hide();
           widget.events.add(event);
           _hideOverlay();
         },
@@ -282,12 +257,16 @@ class _CalenderGrid extends State<CalenderGrid> {
         child: OverlayPortal(
           controller: _overlayCtrl,
           overlayChildBuilder: _buildOverlay,
-          child: SizedBox(
-            key: _keySc,
+          child: Sizedwidget(
+            onSize: (size) {
+              setState(() {
+                scrollViewSize = size;
+                _currentWidth = size.width;
+              });
+            },
             child: GridView.builder(
               controller: controller,
               physics: scrollPhysics,
-              key: _key,
               shrinkWrap: true,
               itemCount: dayDiff,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -297,65 +276,13 @@ class _CalenderGrid extends State<CalenderGrid> {
               ),
               itemBuilder: (context, index) {
                 DateTime itemDay = weekStart.add(Duration(days: index));
-                Color cardColor = Colors.black26;
-                List<Event> listEvents = widget.events.getDate(itemDay);
-                List<Widget> tags = [];
 
-                for (int i = 0; i < min(listEvents.length, tagNum); i++) {
-                  tags.add(_createTag(context, listEvents[i]));
-                }
-
-                if (listEvents.length == tagNum + 1) {
-                  tags.add(_createTag(context, listEvents.last));
-                } else if (listEvents.length > tagNum + 1) {
-                  tags.add(Text('${listEvents.length - tagNum - 1}'));
-                }
-
-                if (today == itemDay) {
-                  cardColor = Theme.of(context).highlightColor;
-                }
-
-                return Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [BoxShadow(color: cardColor)],
-                    border: BoxBorder.all(color: Colors.white, width: 1),
-                  ),
-                  child: InkWell(
-                    onTap: () {
-                      globalPopupEventNotifier.value = PopupEvent(
-                        Event(
-                          name: "",
-                          start: itemDay,
-                          eventType: EventType.user,
-                          repeat: Repeat.no,
-                        ),
-                        PopupType.addtag,
-                      );
-                      _overlayCtrl.toggle();
-                      if (_overlayCtrl.isShowing) {
-                        setState(() {
-                          scrollPhysics = NeverScrollableScrollPhysics();
-                        });
-                      } else {
-                        setState(() {
-                          scrollPhysics = null;
-                        });
-                      }
-                      _open = !_open;
-                    },
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('${itemDay.day}'),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: tags,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                return DateItem(
+                  date: itemDay,
+                  events: widget.events,
+                  today: today,
+                  tagNum: tagNum,
+                  overlayCtl: _overlayCtrl,
                 );
               },
             ),
@@ -364,6 +291,105 @@ class _CalenderGrid extends State<CalenderGrid> {
       ),
     );
   }
+}
+
+class DateItem extends StatefulWidget {
+  final EventManager events;
+  final OverlayPortalController overlayCtl;
+  final int tagNum;
+  final DateTime date;
+  final DateTime today;
+  
+  const DateItem({super.key, required this.events, required this.overlayCtl, required this.tagNum, required this.today, required this.date});
+
+  @override
+  State<StatefulWidget> createState() => _DateItem();
+}
+
+class _DateItem extends State<DateItem> {
+
+  @override
+  void initState() {
+    super.initState();
+    widget.events.addListener((info) {
+      if (startOfDay(info.date) == widget.date && mounted) {
+        setState(() { });
+      }
+
+      return mounted;
+    });
+  }
+
+  Widget _createTag(BuildContext context, Event event) {
+    return InkWell(
+      onTap: () {
+        globalPopupEventNotifier.value = PopupEvent(event, PopupType.edittag);
+        widget.overlayCtl.toggle();
+      },
+      child: Container(
+        height: 20,
+        padding: EdgeInsets.only(left: 5, right: 5),
+        width: double.infinity,
+        decoration: BoxDecoration(color: Theme.of(context).hintColor),
+        child: Text(event.name),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Color cardColor = Colors.black26;
+    List<Event> listEvents = widget.events.getDate(widget.date);
+    List<Widget> tags = [];
+
+    for (int i = 0; i < min(listEvents.length, widget.tagNum); i++) {
+    tags.add(_createTag(context, listEvents[i]));
+  }
+
+    if (listEvents.length == widget.tagNum + 1) {
+      tags.add(_createTag(context, listEvents.last));
+    } else if (listEvents.length > widget.tagNum + 1) {
+      tags.add(Text('${listEvents.length - widget.tagNum - 1}'));
+    }
+
+    if (widget.today == widget.date) {
+      cardColor = Theme.of(context).highlightColor;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [BoxShadow(color: cardColor)],
+        border: BoxBorder.all(color: Colors.white, width: 1),
+      ),
+      child: InkWell(
+        onTap: () {
+          globalPopupEventNotifier.value = PopupEvent(
+            Event(
+              name: "",
+              start: widget.date,
+              eventType: EventType.user,
+              repeat: Repeat.no,
+            ),
+            PopupType.addtag,
+          );
+          widget.overlayCtl.toggle();
+        },
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${widget.date.day}'),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: tags,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 }
 
 class EventTags extends StatelessWidget {
@@ -608,10 +634,12 @@ class _EditDetail extends State<EditDetail> {
                               onChanged: (value) {
                                 setState(() {
                                   isAllDay = value;
-                                  _event.start = startOfDay(_event.start);
-                                  _event.end = _event.start.add(
-                                    Duration(hours: 24),
-                                  );
+                                  if (value) {
+                                    _event.start = startOfDay(_event.start);
+                                    _event.end = _event.start.add(
+                                      Duration(hours: 24),
+                                    );
+                                  }
                                 });
                               },
                             ),

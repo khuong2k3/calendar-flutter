@@ -1,79 +1,5 @@
 import 'package:flutter/material.dart';
 
-// class MyTooltip extends StatefulWidget {
-//   final Widget child; // The widget the tooltip will wrap (e.g., an Icon)
-//   final Widget content; // The custom content to display in the popup
-//   final Color? arrowColor;
-//   final OverlayPortalController? overlayController;
-//
-//   const MyTooltip({
-//     super.key,
-//     required this.child,
-//     required this.content,
-//     this.arrowColor,
-//     this.overlayController,
-//   });
-//
-//   @override
-//   State<MyTooltip> createState() => _CustomTooltipState();
-// }
-
-// class _CustomTooltipState extends State<MyTooltip> {
-//   OverlayPortalController _overlayController = OverlayPortalController();
-//   final _layerLink = LayerLink();
-//   bool _open = false;
-//   // GlobalMouseEvent? clickValue;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//
-//     if (widget.overlayController != null) {
-//       _overlayController = widget.overlayController as OverlayPortalController;
-//     }
-//   }
-//
-//   Widget _buildOverlay(BuildContext context) {
-//     Color paintColor = Colors.white;
-//     if (widget.arrowColor != null) {
-//       paintColor = widget.arrowColor as Color;
-//     }
-//
-//     return CompositedTransformFollower(
-//       link: _layerLink,
-//       offset: const Offset(0.0, 0.0),
-//       targetAnchor: Alignment.topCenter,
-//       child: Align(
-//         alignment: Alignment.topLeft,
-//         child: CustomPaint(
-//           painter: TooltipPainter(paintColor),
-//           child: widget.content,
-//         ),
-//       ),
-//     );
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//
-//     return InkWell(
-//       onTap: () {
-//         globalEventNotifier.value = _overlayController;
-//         _overlayController.toggle();
-//         _open = !_open;
-//       },
-//       child: CompositedTransformTarget(
-//         link: _layerLink,
-//         child: OverlayPortal(
-//           controller: _overlayController,
-//           overlayChildBuilder: _buildOverlay,
-//           child: widget.child,
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 const double arrowHeight = 8.0;
 const double arrowWidth = 16.0;
 
@@ -147,6 +73,7 @@ class _TooltipWrapper extends State<TooltipWrapper> {
       link: widget.layerLink,
       offset: newOffset,
       targetAnchor: Alignment.topLeft,
+      followerAnchor: Alignment.topLeft,
       child: Align(
         alignment: Alignment.topLeft,
         child: CustomPaint(
