@@ -133,7 +133,9 @@ class _EventList extends State<EventList> {
   late DateTime _selectedDate;
 
   bool _onChange(EventInfoChange info) {
-    if (startOfDay(info.date) == _selectedDate && mounted) {
+    if (info.date == null || (info.date != null && startOfDay(info.date as DateTime) == _selectedDate && mounted
+    )
+    ) {
       setState(() {
         print(getCurrentLineNumber());
       });

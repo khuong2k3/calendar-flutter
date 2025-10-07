@@ -318,12 +318,14 @@ class DateItem extends StatefulWidget {
 }
 
 class _DateItem extends State<DateItem> {
+  late List<Event> _listEvents;
+
   @override
   void initState() {
     super.initState();
 
     widget.events.addListener((info) {
-      if (startOfDay(info.date) == widget.date && mounted) {
+      if (info.date == null || (info.date != null && startOfDay(info.date as DateTime) == widget.date && mounted)) {
         setState(() {
           print(getCurrentLineNumber());
         });
@@ -352,17 +354,17 @@ class _DateItem extends State<DateItem> {
   @override
   Widget build(BuildContext context) {
     Color cardColor = Theme.of(context).primaryColor;
-    List<Event> listEvents = widget.events.getDate(widget.date);
+    _listEvents = widget.events.getDate(widget.date);
     List<Widget> tags = [];
 
-    for (int i = 0; i < min(listEvents.length, widget.tagNum); i++) {
-      tags.add(_createTag(context, listEvents[i]));
+    for (int i = 0; i < min(_listEvents.length, widget.tagNum); i++) {
+      tags.add(_createTag(context, _listEvents[i]));
     }
 
-    if (listEvents.length == widget.tagNum + 1) {
-      tags.add(_createTag(context, listEvents.last));
-    } else if (listEvents.length > widget.tagNum + 1) {
-      tags.add(Text('${listEvents.length - widget.tagNum}'));
+    if (_listEvents.length == widget.tagNum + 1) {
+      tags.add(_createTag(context, _listEvents.last));
+    } else if (_listEvents.length > widget.tagNum + 1) {
+      tags.add(Text('${_listEvents.length - widget.tagNum}'));
     }
 
     if (widget.today == widget.date) {

@@ -202,7 +202,7 @@ final globalEventNotifier = ValueNotifier<OverlayPortalController?>(null);
 final globalMouseNotifier = ValueNotifier<PointerDownEvent?>(null);
 
 class EventInfoChange {
-  final DateTime date;
+  final DateTime? date;
 
   const EventInfoChange(this.date);
 }
@@ -228,6 +228,7 @@ class EventManager {
           _events[date] = [event];
         }
       }
+      // onChange(EventInfoChange(null));
     });
   }
 
