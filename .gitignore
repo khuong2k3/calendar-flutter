@@ -11,6 +11,8 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+db.py
+db.sqlite
 
 # IntelliJ related
 *.iml

@@ -1,11 +1,26 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_app/calendar.dart';
 import 'package:flutter_app/calenderbig.dart';
 import 'package:flutter_app/dropdown.dart';
 import 'package:flutter_app/event_manager.dart';
 import 'package:flutter_app/helper.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
+    // Check the platform and initialize the FFI factory if needed
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    // Initialize FFI for desktop platforms
+    sqfliteFfiInit();
+    
+    // Explicitly set the databaseFactory to the FFI implementation
+    databaseFactory = databaseFactoryFfi;
+  }
+  
+  // Ensure Flutter is initialized (recommended before any platform-specific calls)
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 
@@ -14,7 +29,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final EventManager eventManager = EventManager([]);
+    final EventManager eventManager = EventManager();
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -72,11 +87,7 @@ class Tags extends StatelessWidget {
   final Event event;
   final void Function(Event) onSave;
 
-  Tags({
-    super.key,
-    required this.event,
-    required this.onSave,
-  });
+  Tags({super.key, required this.event, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
@@ -89,8 +100,7 @@ class Tags extends StatelessWidget {
           onSave(newEvent);
           _overlayCtrl.hide();
         },
-        onEdit: (event) {
-        },
+        onEdit: (event) {},
       ),
       arrowColor: Theme.of(context).dividerColor,
       child: InkWell(
@@ -102,21 +112,16 @@ class Tags extends StatelessWidget {
           alignment: AlignmentGeometry.centerLeft,
           child: Text(event.name),
         ),
-      )
+      ),
     );
   }
 }
-
 
 class EventList extends StatefulWidget {
   final DateTime date;
   final EventManager events;
 
-  const EventList({
-    super.key,
-    required this.date,
-    required this.events,
-  });
+  const EventList({super.key, required this.date, required this.events});
 
   @override
   State<StatefulWidget> createState() => _EventList();
@@ -127,7 +132,9 @@ class _EventList extends State<EventList> {
 
   bool _onChange(EventInfoChange info) {
     if (startOfDay(info.date) == _selectedDate && mounted) {
-        setState(() { });
+      setState(() {
+        print(getCurrentLineNumber());
+      });
     }
 
     return mounted;
@@ -138,7 +145,6 @@ class _EventList extends State<EventList> {
     super.initState();
     _selectedDate = startOfDay(widget.date);
     widget.events.addListener(_onChange);
-
   }
 
   @override
@@ -154,6 +160,7 @@ class _EventList extends State<EventList> {
             width: 280,
             onSelectDate: (date) {
               setState(() {
+                print(getCurrentLineNumber());
                 _selectedDate = date;
               });
             },
@@ -165,12 +172,14 @@ class _EventList extends State<EventList> {
           //   child: const Text("save"),
           // ),
           Padding(
-            padding: EdgeInsets.all(10), 
+            padding: EdgeInsets.all(10),
             child: Column(
               spacing: 10,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Events ${_selectedDate.year}/${_selectedDate.month}/${_selectedDate.day}:"),
+                Text(
+                  "Events ${_selectedDate.year}/${_selectedDate.month}/${_selectedDate.day}:",
+                ),
                 Column(
                   spacing: 5,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -180,6 +189,7 @@ class _EventList extends State<EventList> {
                       event: event,
                       onSave: (newEvent) {
                         setState(() {
+                          print(getCurrentLineNumber());
                           widget.events.replace(event, newEvent);
                         });
                       },
@@ -187,7 +197,7 @@ class _EventList extends State<EventList> {
                   }).toList(),
                 ),
               ],
-            )
+            ),
           ),
         ],
       ),
@@ -195,9 +205,6 @@ class _EventList extends State<EventList> {
   }
 }
 
-
-
 // class  extends StatelessWidget {
 //   ({super.key});
 // }
-

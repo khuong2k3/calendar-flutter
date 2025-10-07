@@ -77,10 +77,8 @@ class CalenderGrid extends StatefulWidget {
 }
 
 class _CalenderGrid extends State<CalenderGrid> {
-  // final GlobalKey _key = GlobalKey();
-  // final GlobalKey _keySc = GlobalKey();
   Size? scrollViewSize;
-  double _currentWidth = 0.01;
+  double _cellSize = 0.01;
 
   ScrollController controller = ScrollController(
     initialScrollOffset: 0.001,
@@ -91,11 +89,10 @@ class _CalenderGrid extends State<CalenderGrid> {
   late DateTime endRender;
 
   void _onScroll() {
-    double currentPosition = controller.offset;
-
     if (controller.position.atEdge) {
       setState(() {
-        if (currentPosition == 0.0) {
+        print(getCurrentLineNumber());
+        if (controller.offset == 0.0) {
           startRender = startRender.subtract(Duration(days: 7));
           if (endRender.difference(startRender) > Duration(days: maxRender)) {
             endRender.subtract(Duration(days: 7));
@@ -106,13 +103,39 @@ class _CalenderGrid extends State<CalenderGrid> {
             startRender.add(Duration(days: 7));
           }
         }
+        _updateDate();
       });
     }
 
-    double cellSize = _currentWidth / 7;
-    double newPosition = (currentPosition / cellSize).round() * cellSize;
+    double newPosition = (controller.offset / _cellSize).round() * _cellSize;
 
     controller.jumpTo(max(0.001, newPosition));
+  }
+
+  int _dayDiff = 0;
+  late List<Widget> _dates;
+
+  void _updateDate() {
+    startRender = startRender.subtract(Duration(days: startRender.weekday));
+
+    endRender = endRender.add(Duration(days: 7 - endRender.weekday));
+    _dayDiff = endRender.difference(startRender).inDays;
+    _dates = [];
+    int tagNum = (_cellSize / 20).floor() - 2;
+    DateTime today = startOfDay(DateTime.now());
+    for (int i = 0; i < _dayDiff; i++) {
+      DateTime itemDay = startRender.add(Duration(days: i));
+      _dates.add(
+        DateItem(
+          key: ValueKey(i),
+          overlayCtl: _overlayCtrl,
+          today: today,
+          date: itemDay,
+          events: widget.events,
+          tagNum: tagNum,
+        ),
+      );
+    }
   }
 
   @override
@@ -122,12 +145,13 @@ class _CalenderGrid extends State<CalenderGrid> {
     endRender = widget.endDate;
 
     controller.addListener(_onScroll);
+    _updateDate();
   }
 
   final OverlayPortalController _overlayCtrl = OverlayPortalController();
   final _layerLink = LayerLink();
   Offset _popupOffset = Offset(0, 0);
-  bool _open = false;
+  // bool _open = false;
 
   void _hideOverlay() {
     _overlayCtrl.hide();
@@ -140,7 +164,8 @@ class _CalenderGrid extends State<CalenderGrid> {
     }
     PopupEvent popupEvent = globalPopupEventNotifier.value as PopupEvent;
 
-    if (popupEvent.popupType == PopupType.editdetail || popupEvent.popupType == PopupType.adddetail) {
+    if (popupEvent.popupType == PopupType.editdetail ||
+        popupEvent.popupType == PopupType.adddetail) {
       DateTime dateTime = startOfDay(popupEvent.event.start);
       return EditDetail(
         event: popupEvent.event,
@@ -182,6 +207,7 @@ class _CalenderGrid extends State<CalenderGrid> {
           },
           onEdit: (event) {
             setState(() {
+              print(getCurrentLineNumber());
               if (popupEvent.popupType == PopupType.addtag) {
                 globalPopupEventNotifier.value = PopupEvent(
                   event,
@@ -219,34 +245,10 @@ class _CalenderGrid extends State<CalenderGrid> {
 
   ScrollPhysics? scrollPhysics;
 
-  Widget _createTag(BuildContext context, Event event) {
-    return InkWell(
-      onTap: () {
-        globalPopupEventNotifier.value = PopupEvent(event, PopupType.edittag);
-        _overlayCtrl.toggle();
-      },
-      child: Container(
-        height: 20,
-        padding: EdgeInsets.only(left: 5, right: 5),
-        width: double.infinity,
-        decoration: BoxDecoration(color: Theme.of(context).hintColor),
-        child: Text(event.name),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    DateTime weekStart = startRender.subtract(
-      Duration(days: startRender.weekday),
-    );
-    DateTime weekEnd = endRender.add(Duration(days: 7 - endRender.weekday));
-
-    int dayDiff = weekEnd.difference(weekStart).inDays;
-    DateTime today = startOfDay(DateTime.now());
-
-    double cellSize = _currentWidth / 7;
-    int tagNum = (cellSize / 20).floor() - 2;
+    // DateTime today = startOfDay(DateTime.now());
+    // int tagNum = (_cellSize / 20).floor() - 2;
 
     return Listener(
       onPointerDown: (e) {
@@ -260,30 +262,24 @@ class _CalenderGrid extends State<CalenderGrid> {
           child: Sizedwidget(
             onSize: (size) {
               setState(() {
+                print(getCurrentLineNumber());
                 scrollViewSize = size;
-                _currentWidth = size.width;
+                _cellSize = size.width / 7;
+                _updateDate();
               });
             },
             child: GridView.builder(
               controller: controller,
               physics: scrollPhysics,
               shrinkWrap: true,
-              itemCount: dayDiff,
+              itemCount: _dayDiff,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 7,
                 crossAxisSpacing: 0.0,
                 mainAxisSpacing: 0.0,
               ),
               itemBuilder: (context, index) {
-                DateTime itemDay = weekStart.add(Duration(days: index));
-
-                return DateItem(
-                  date: itemDay,
-                  events: widget.events,
-                  today: today,
-                  tagNum: tagNum,
-                  overlayCtl: _overlayCtrl,
-                );
+                return _dates[index];
               },
             ),
           ),
@@ -299,21 +295,30 @@ class DateItem extends StatefulWidget {
   final int tagNum;
   final DateTime date;
   final DateTime today;
-  
-  const DateItem({super.key, required this.events, required this.overlayCtl, required this.tagNum, required this.today, required this.date});
+
+  const DateItem({
+    super.key,
+    required this.events,
+    required this.overlayCtl,
+    required this.tagNum,
+    required this.today,
+    required this.date,
+  });
 
   @override
   State<StatefulWidget> createState() => _DateItem();
 }
 
 class _DateItem extends State<DateItem> {
-
   @override
   void initState() {
     super.initState();
+
     widget.events.addListener((info) {
       if (startOfDay(info.date) == widget.date && mounted) {
-        setState(() { });
+        setState(() {
+          print(getCurrentLineNumber());
+        });
       }
 
       return mounted;
@@ -343,8 +348,8 @@ class _DateItem extends State<DateItem> {
     List<Widget> tags = [];
 
     for (int i = 0; i < min(listEvents.length, widget.tagNum); i++) {
-    tags.add(_createTag(context, listEvents[i]));
-  }
+      tags.add(_createTag(context, listEvents[i]));
+    }
 
     if (listEvents.length == widget.tagNum + 1) {
       tags.add(_createTag(context, listEvents.last));
@@ -379,17 +384,13 @@ class _DateItem extends State<DateItem> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('${widget.date.day}'),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: tags,
-              ),
+              Column(mainAxisSize: MainAxisSize.min, children: tags),
             ],
           ),
         ),
       ),
     );
   }
-
 }
 
 class EventTags extends StatelessWidget {
@@ -633,6 +634,7 @@ class _EditDetail extends State<EditDetail> {
                               value: isAllDay,
                               onChanged: (value) {
                                 setState(() {
+                                  print(getCurrentLineNumber());
                                   isAllDay = value;
                                   if (value) {
                                     _event.start = startOfDay(_event.start);
@@ -687,6 +689,7 @@ class _EditDetail extends State<EditDetail> {
                               onChanged: (value) {
                                 if (value != null) {
                                   setState(() {
+                                    print(getCurrentLineNumber());
                                     _event.repeat = value;
                                   });
                                 }
@@ -707,6 +710,7 @@ class _EditDetail extends State<EditDetail> {
                             TextButton(
                               onPressed: () {
                                 setState(() {
+                                  print(getCurrentLineNumber());
                                   _event.reminders.remove(reminder);
                                 });
                               },
@@ -742,6 +746,7 @@ class _EditDetail extends State<EditDetail> {
                             }).toList(),
                         onSelected: (item) {
                           setState(() {
+                            print(getCurrentLineNumber());
                             _event.reminders.add(item as Reminder);
                           });
                           _controllerReminders.hide();
@@ -762,7 +767,7 @@ class _EditDetail extends State<EditDetail> {
                         child: InkWell(
                           onTap: () {
                             _controllerReminders.toggle();
-                          }, 
+                          },
                           child: const Center(
                             child: Text(
                               "Reminders",
@@ -927,6 +932,7 @@ class _DropdownDateSelector extends State<DropdownDateSelector> {
             onPressed: () {
               if (widget.disabled == null || widget.disabled == true) {
                 setState(() {
+                  print(getCurrentLineNumber());
                   _open = !_open;
                 });
               }
@@ -988,6 +994,7 @@ class _DateInput extends State<DateInput> {
 
   void _changeDate(DateTime date) {
     setState(() {
+      print(getCurrentLineNumber());
       String newText = "${date.year}/${date.month}/${date.day}";
       _date = date;
       _controler.value = _controler.value.copyWith(

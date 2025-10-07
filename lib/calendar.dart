@@ -38,93 +38,90 @@ class _CalendarState extends State<Calendar> {
     return Padding(
       padding: EdgeInsets.only(top: 5, bottom: 5),
       child: Column(
-      mainAxisSize: MainAxisSize.min,
-      spacing: 10.0,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  style: TextButton.styleFrom(
-                    minimumSize: Size.zero,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 10.0,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(minimumSize: Size.zero),
+                    onPressed: () {
+                      setState(() {
+                        print(getCurrentLineNumber());
+                        _month -= 1;
+                        if (_month == 0) {
+                          _month = 12;
+                          _year -= 1;
+                        }
+                      });
+                    },
+                    child: Icon(Icons.arrow_left),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _month -= 1;
-                      if (_month == 0) {
-                        _month = 12;
-                        _year -= 1;
-                      }
-                    });
-                  },
-                  child: Icon(Icons.arrow_left),
-                ),
-                Text(monthsName[_month - 1]),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    minimumSize: Size.zero,
+                  Text(monthsName[_month - 1]),
+                  TextButton(
+                    style: TextButton.styleFrom(minimumSize: Size.zero),
+                    onPressed: () {
+                      setState(() {
+                        print(getCurrentLineNumber());
+                        _month += 1;
+                        if (_month == 13) {
+                          _month = 1;
+                          _year += 1;
+                        }
+                      });
+                    },
+                    child: Icon(Icons.arrow_right),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _month += 1;
-                      if (_month == 13) {
-                        _month = 1;
-                        _year += 1;
-                      }
-                    });
-                  },
-                  child: Icon(Icons.arrow_right),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  style: TextButton.styleFrom(
-                    minimumSize: Size.zero,
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(minimumSize: Size.zero),
+                    onPressed: () {
+                      setState(() {
+                        print(getCurrentLineNumber());
+                        _year--;
+                      });
+                    },
+                    child: Icon(Icons.arrow_left),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _year--;
-                    });
-                  },
-                  child: Icon(Icons.arrow_left),
-                ),
-                Text("$_year"),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    minimumSize: Size.zero,
+                  Text("$_year"),
+                  TextButton(
+                    style: TextButton.styleFrom(minimumSize: Size.zero),
+                    onPressed: () {
+                      setState(() {
+                        print(getCurrentLineNumber());
+                        _year++;
+                      });
+                    },
+                    child: Icon(Icons.arrow_right),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _year++;
-                    });
-                  },
-                  child: Icon(Icons.arrow_right),
-                ),
-              ],
-            ),
-          ],
-        ),
-        MonthView(
-          width: widget.width,
-          year: _year,
-          month: _month,
-          seleted: widget.seleted,
-          showToday: widget.showToday,
-          onSelectDate: (date) {
-            if (widget.onSelectDate != null) {
-              (widget.onSelectDate as void Function(DateTime))(date);
-            }
-          },
-        ),
-      ],
-    ));
+                ],
+              ),
+            ],
+          ),
+          MonthView(
+            width: widget.width,
+            year: _year,
+            month: _month,
+            seleted: widget.seleted,
+            showToday: widget.showToday,
+            onSelectDate: (date) {
+              if (widget.onSelectDate != null) {
+                (widget.onSelectDate as void Function(DateTime))(date);
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -204,5 +201,3 @@ class MonthView extends StatelessWidget {
     );
   }
 }
-
-

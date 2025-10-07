@@ -66,7 +66,9 @@ class _Dropdown extends State<MyDropdown> {
         alignment: Alignment.topLeft,
         child: CustomPaint(
           painter: TooltipPainter(
-            color: widget.arrowColor == null ? Theme.of(context).primaryColor : widget.arrowColor as Color, 
+            color: widget.arrowColor == null
+                ? Theme.of(context).primaryColor
+                : widget.arrowColor as Color,
             alignment: Alignment.topLeft,
             offset: Offset(0.0, 0.0),
           ),
@@ -105,7 +107,11 @@ class SelectionList extends StatelessWidget {
   final List<DropdownMenuItem> items;
   final void Function(dynamic) onSelected;
 
-  const SelectionList({super.key, required this.onSelected, required this.items});
+  const SelectionList({
+    super.key,
+    required this.onSelected,
+    required this.items,
+  });
 
   @override
   Widget build(BuildContext context) {

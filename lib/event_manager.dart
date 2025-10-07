@@ -2,9 +2,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_app/helper.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
 // Defines the event data we want to broadcast
@@ -23,7 +26,20 @@ class PopupEvent {
   PopupEvent(this.event, this.popupType);
 }
 
-enum EventType { holiday, user }
+enum EventType { 
+  holiday, user;
+
+  static EventType fromString(String value) {
+    switch (value) {
+      case "EventType.holiday":
+        return EventType.holiday;
+      case "EventType.user":
+        return EventType.user;
+      default:
+        return EventType.user;
+    }
+  }
+}
 
 Uuid uuidGen = Uuid();
 
@@ -75,7 +91,43 @@ class Event {
     }
     return false;
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'location': location,
+      'start': start.millisecondsSinceEpoch,
+      'end': end.millisecondsSinceEpoch,
+      'eventType': eventType.toString(),
+      'repeat': repeat.toString(),
+      'notes': notes,
+      'reminders': jsonEncode(reminders.map((ele) => ele.toMap()).toList()),
+    };
+  }
+
+  static Event fromMap(Map<String, dynamic> value) {
+    Event event = Event(
+      name: value['name'],
+      start: DateTime.fromMillisecondsSinceEpoch(value['start']),
+      eventType: EventType.fromString(value['eventType']),
+      repeat: Repeat.fromString(value['repeat']),
+    );
+    event.id = value['id'];
+    event.end = DateTime.fromMillisecondsSinceEpoch(value['end']);
+    event.location = value['location'];
+    event.notes = value['notes'];
+    // List<dynamic> reminders = 
+    for (dynamic reminder in jsonDecode(value['reminders']).map((ele) {
+      return Reminder.fromMap(ele as Map<String, dynamic>);
+    }).toList()) {
+      event.reminders.add(reminder as Reminder);
+    }
+
+    return event;
+  }
 }
+
 
 enum PopupType { editdetail, edittag, addtag, adddetail }
 
@@ -85,6 +137,23 @@ enum Repeat {
   weekly,
   monthly,
   yearly;
+
+  static Repeat fromString(String value) {
+    switch (value) {
+      case "Repeat.no":
+        return Repeat.no;
+      case "Repeat.daily":
+        return Repeat.daily;
+      case "Repeat.weekly":
+        return Repeat.weekly;
+      case "Repeat.monthly":
+        return Repeat.monthly;
+      case "Repeat.yearly":
+        return Repeat.yearly;
+      default:
+        return Repeat.no;
+    }
+  }
 
   String toName() {
     switch (this) {
@@ -107,6 +176,17 @@ class Reminder {
   String range;
 
   Reminder(this.duration, this.range);
+
+  Map<String, dynamic> toMap() {
+    return {
+      'duration': duration,
+      'range': range,
+    };
+  }
+
+  static Reminder fromMap(Map<String, dynamic> value) {
+    return Reminder(value['duration'], value['range']);
+  }
 
   @override
   String toString() {
@@ -133,14 +213,16 @@ class EventInfoChange {
 class EventManager {
   final Map<String, List<Event>> _events = {};
   List<bool Function(EventInfoChange)> listeners = [];
+  final DatabaseHelper _db = DatabaseHelper();
   // void Function()? onChange;
 
   String _dateString(DateTime date) {
     return "${date.year}:${date.month}:${date.day}";
   }
 
-  EventManager(List<Event> events) {
-    for (Event event in events) {
+  EventManager() {
+    _db.query().then((events) {
+      for (Event event in events) {
       String date = _dateString(event.start);
       List<Event>? eventsList = _events[date];
       if (eventsList != null) {
@@ -149,6 +231,7 @@ class EventManager {
         _events[date] = [event];
       }
     }
+    });
   }
 
   void addListener(bool Function(EventInfoChange) listener) {
@@ -201,6 +284,7 @@ class EventManager {
   void add(Event event) {
     _add(event);
     onChange(EventInfoChange(event.start));
+    _db.insertEvent(event);
   }
 
   List<Event> getDate(DateTime date) {
@@ -216,6 +300,7 @@ class EventManager {
   void remove(DateTime date, Event event) {
     _remove(date, event);
     onChange(EventInfoChange(date));
+    _db.removeEvent(event);
   }
 
   void replace(Event oldEvent, Event newEvent) {
@@ -227,10 +312,106 @@ class EventManager {
     }
 
     update(dateTime);
+    _db.insertEvent(newEvent);
   }
 
   void save() {
-    File file = File("current.json");
-    file.writeAsString(jsonEncode(_events));
+    // Sqflite()
   }
 }
+
+
+class DatabaseHelper {
+  static final DatabaseHelper _instance = DatabaseHelper._internal();
+  factory DatabaseHelper() => _instance;
+  DatabaseHelper._internal();
+
+  static Database? _database;
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
+  }
+
+  Future<Database> _initDatabase() async {
+    // Get the device's application document directory
+    // Directory documentsDirectory = await getApplicationDocumentsDirectory();
+    String path = join(".", "db.sqlite");
+
+    // Open the database
+    return await openDatabase(
+      path,
+      version: 1, // Database version
+      onCreate: _onCreate,
+      // onUpgrade: _onUpgrade,
+    );
+  }
+
+  Future<int> insertEvent(Event event) async {
+    Database db = await database;
+
+    return await db.insert("event", event.toMap(), conflictAlgorithm: ConflictAlgorithm.replace, 
+    );
+  }
+
+  Future removeEvent(Event event) async {
+    Database db = await database;
+    await db.delete("event", where: "id = ?", whereArgs: [event.id]);
+  }
+
+  Future<List<Event>> query() async {
+    Database db = await database;
+    List<Event> events = (await db.query("event")).map((ele) {
+      return Event.fromMap(ele);
+    }).toList();
+
+    return events;
+  }
+
+  // This function is called only once when the database is first created
+  Future _onCreate(Database db, int version) async {
+    await db.execute("""
+      create table event(
+        id string primary key,
+        name string,
+        location string,
+        start timestamp,
+        end timestamp,
+        eventType string,
+        repeat string,
+        notes text,
+        reminders text
+      );
+      """);
+
+    // await db.execute("""
+    //   create table reminder (
+    //     eventId string,
+    //     id string,
+    //     duration integer,
+    //     range string,
+    //     primary key(eventId, id),
+    //     foreign key(eventId) references event(id)
+    //   );
+    //   """);
+  }
+
+  // // This function handles database upgrades (e.g., adding a new column)
+  // Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+  //   // Example: If upgrading from v1 to v2, add a new table
+  //   if (oldVersion < 2) {
+  //     await db.execute('''
+  //       CREATE TABLE logs (
+  //         id INTEGER PRIMARY KEY,
+  //         message TEXT
+  //       )
+  //     ''');
+  //   }
+  // }
+}
+
+
+
+
+
