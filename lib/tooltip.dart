@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/helper.dart';
 
 const double arrowHeight = 8.0;
 const double arrowWidth = 16.0;
@@ -36,6 +37,7 @@ class _TooltipWrapper extends State<TooltipWrapper> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_key.currentContext?.size != null) {
         setState(() {
+          print(getCurrentLineNumber());
           _size = _key.currentContext?.size;
         });
       }

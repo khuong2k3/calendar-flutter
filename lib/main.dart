@@ -9,15 +9,15 @@ import 'package:flutter_app/helper.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
-    // Check the platform and initialize the FFI factory if needed
+  // Check the platform and initialize the FFI factory if needed
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     // Initialize FFI for desktop platforms
     sqfliteFfiInit();
-    
+
     // Explicitly set the databaseFactory to the FFI implementation
     databaseFactory = databaseFactoryFfi;
   }
-  
+
   // Ensure Flutter is initialized (recommended before any platform-specific calls)
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -47,12 +47,14 @@ class MyApp extends StatelessWidget {
         //   leading: Icon(Icons.login),
         // ),
         // drawer: Drawer(child: ListTile(title: Text("do thing"))),
-        body: Listener(
-          onPointerDown: (e) {
-            globalMouseNotifier.value = e;
-          },
-          behavior: HitTestBehavior.translucent,
-          child: Row(
+        body: 
+        // Listener(
+        //   onPointerDown: (e) {
+        //     globalMouseNotifier.value = e;
+        //   },
+          // behavior: HitTestBehavior.translucent,
+          // child: 
+        Row(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 10.0,
@@ -61,7 +63,7 @@ class MyApp extends StatelessWidget {
               Calenderbig(events: eventManager),
             ],
           ),
-        ),
+        // ),
         // bottomNavigationBar: NavigationBar(
         //   destinations: [
         //     NavigationDestination(icon: Icon(Icons.home), label: "Home"),

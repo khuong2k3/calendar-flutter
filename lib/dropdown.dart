@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/helper.dart';
 import 'package:flutter_app/sizedwidget.dart';
 
 // class MyDropdown2 extends StatelessWidget {
@@ -75,6 +76,7 @@ class _Dropdown extends State<MyDropdown> {
           child: Sizedwidget(
             onSize: (size) {
               setState(() {
+                print(getCurrentLineNumber());
                 _sizeContent = size;
               });
             },

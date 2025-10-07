@@ -26,8 +26,9 @@ class PopupEvent {
   PopupEvent(this.event, this.popupType);
 }
 
-enum EventType { 
-  holiday, user;
+enum EventType {
+  holiday,
+  user;
 
   static EventType fromString(String value) {
     switch (value) {
@@ -117,7 +118,7 @@ class Event {
     event.end = DateTime.fromMillisecondsSinceEpoch(value['end']);
     event.location = value['location'];
     event.notes = value['notes'];
-    // List<dynamic> reminders = 
+    // List<dynamic> reminders =
     for (dynamic reminder in jsonDecode(value['reminders']).map((ele) {
       return Reminder.fromMap(ele as Map<String, dynamic>);
     }).toList()) {
@@ -127,7 +128,6 @@ class Event {
     return event;
   }
 }
-
 
 enum PopupType { editdetail, edittag, addtag, adddetail }
 
@@ -178,10 +178,7 @@ class Reminder {
   Reminder(this.duration, this.range);
 
   Map<String, dynamic> toMap() {
-    return {
-      'duration': duration,
-      'range': range,
-    };
+    return {'duration': duration, 'range': range};
   }
 
   static Reminder fromMap(Map<String, dynamic> value) {
@@ -223,14 +220,14 @@ class EventManager {
   EventManager() {
     _db.query().then((events) {
       for (Event event in events) {
-      String date = _dateString(event.start);
-      List<Event>? eventsList = _events[date];
-      if (eventsList != null) {
-        eventsList.add(event);
-      } else {
-        _events[date] = [event];
+        String date = _dateString(event.start);
+        List<Event>? eventsList = _events[date];
+        if (eventsList != null) {
+          eventsList.add(event);
+        } else {
+          _events[date] = [event];
+        }
       }
-    }
     });
   }
 
@@ -320,7 +317,6 @@ class EventManager {
   }
 }
 
-
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
@@ -351,7 +347,10 @@ class DatabaseHelper {
   Future<int> insertEvent(Event event) async {
     Database db = await database;
 
-    return await db.insert("event", event.toMap(), conflictAlgorithm: ConflictAlgorithm.replace, 
+    return await db.insert(
+      "event",
+      event.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
@@ -410,8 +409,3 @@ class DatabaseHelper {
   //   }
   // }
 }
-
-
-
-
-

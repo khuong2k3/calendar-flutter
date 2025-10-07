@@ -8,7 +8,7 @@ import 'package:flutter_app/helper.dart';
 import 'package:flutter_app/sizedwidget.dart';
 import 'package:flutter_app/tooltip.dart';
 
-const int maxRender = 200;
+const int maxRender = 140;
 
 class Calenderbig extends StatefulWidget {
   final EventManager events;
@@ -87,6 +87,8 @@ class _CalenderGrid extends State<CalenderGrid> {
 
   late DateTime startRender;
   late DateTime endRender;
+  
+  double _prevPosition = 0.0;
 
   void _onScroll() {
     if (controller.position.atEdge) {
@@ -108,22 +110,30 @@ class _CalenderGrid extends State<CalenderGrid> {
     }
 
     double newPosition = (controller.offset / _cellSize).round() * _cellSize;
+    // int index = (_prevPosition / _cellSize).round();
+    // double newPosition = 0.0;
+    // if (_prevPosition - controller.offset > 0.0) {
+    //   newPosition = (index + 1) * _cellSize;
+    // } else {
+    //   newPosition = (index - 1) * _cellSize;
+    // }
+    //
+    // _prevPosition = controller.offset;
 
     controller.jumpTo(max(0.001, newPosition));
   }
 
-  int _dayDiff = 0;
   late List<Widget> _dates;
 
   void _updateDate() {
     startRender = startRender.subtract(Duration(days: startRender.weekday));
 
     endRender = endRender.add(Duration(days: 7 - endRender.weekday));
-    _dayDiff = endRender.difference(startRender).inDays;
+    int dayDiff = endRender.difference(startRender).inDays;
     _dates = [];
-    int tagNum = (_cellSize / 20).floor() - 2;
+    int tagNum = (_cellSize / 25).floor() - 2;
     DateTime today = startOfDay(DateTime.now());
-    for (int i = 0; i < _dayDiff; i++) {
+    for (int i = 0; i < dayDiff; i++) {
       DateTime itemDay = startRender.add(Duration(days: i));
       _dates.add(
         DateItem(
@@ -247,9 +257,6 @@ class _CalenderGrid extends State<CalenderGrid> {
 
   @override
   Widget build(BuildContext context) {
-    // DateTime today = startOfDay(DateTime.now());
-    // int tagNum = (_cellSize / 20).floor() - 2;
-
     return Listener(
       onPointerDown: (e) {
         _popupOffset = e.localPosition;
@@ -268,19 +275,20 @@ class _CalenderGrid extends State<CalenderGrid> {
                 _updateDate();
               });
             },
-            child: GridView.builder(
+            child: GridView(
               controller: controller,
               physics: scrollPhysics,
-              shrinkWrap: true,
-              itemCount: _dayDiff,
+              semanticChildCount: 100,
+              cacheExtent: 10000,
+              // primary: true,
+              // addAutomaticKeepAlives: true,
+              // shrinkWrap: true,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 7,
                 crossAxisSpacing: 0.0,
                 mainAxisSpacing: 0.0,
               ),
-              itemBuilder: (context, index) {
-                return _dates[index];
-              },
+              children: _dates,
             ),
           ),
         ),
@@ -343,7 +351,7 @@ class _DateItem extends State<DateItem> {
 
   @override
   Widget build(BuildContext context) {
-    Color cardColor = Colors.black26;
+    Color cardColor = Theme.of(context).primaryColor;
     List<Event> listEvents = widget.events.getDate(widget.date);
     List<Widget> tags = [];
 
@@ -354,7 +362,7 @@ class _DateItem extends State<DateItem> {
     if (listEvents.length == widget.tagNum + 1) {
       tags.add(_createTag(context, listEvents.last));
     } else if (listEvents.length > widget.tagNum + 1) {
-      tags.add(Text('${listEvents.length - widget.tagNum - 1}'));
+      tags.add(Text('${listEvents.length - widget.tagNum}'));
     }
 
     if (widget.today == widget.date) {
@@ -364,7 +372,7 @@ class _DateItem extends State<DateItem> {
     return Container(
       decoration: BoxDecoration(
         boxShadow: [BoxShadow(color: cardColor)],
-        border: BoxBorder.all(color: Colors.white, width: 1),
+        border: BoxBorder.all(color: Theme.of(context).dividerColor, width: 1),
       ),
       child: InkWell(
         onTap: () {
@@ -651,7 +659,6 @@ class _EditDetail extends State<EditDetail> {
                           name: "Start",
                           date: _event.start,
                           onChange: (date) {
-                            // setState(() {});
                             _event.start = date;
                             if (_event.end
                                 .difference(_event.start)
@@ -665,7 +672,6 @@ class _EditDetail extends State<EditDetail> {
                           disabled: isAllDay,
                           date: _event.end,
                           onChange: (date) {
-                            // setState(() {});
                             _event.end = date;
                             if (_event.end
                                 .difference(_event.start)
