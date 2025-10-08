@@ -76,7 +76,7 @@ class _Dropdown extends State<MyDropdown> {
           child: Sizedwidget(
             onSize: (size) {
               setState(() {
-                print(getCurrentLineNumber());
+                // print(getCurrentLineNumber());
                 _sizeContent = size;
               });
             },

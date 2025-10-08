@@ -137,7 +137,7 @@ class _EventList extends State<EventList> {
     )
     ) {
       setState(() {
-        print(getCurrentLineNumber());
+        // print(getCurrentLineNumber());
       });
     }
 
@@ -164,7 +164,7 @@ class _EventList extends State<EventList> {
             width: 280,
             onSelectDate: (date) {
               setState(() {
-                print(getCurrentLineNumber());
+                // print(getCurrentLineNumber());
                 _selectedDate = date;
               });
             },
@@ -193,7 +193,7 @@ class _EventList extends State<EventList> {
                       event: event,
                       onSave: (newEvent) {
                         setState(() {
-                          print(getCurrentLineNumber());
+                          // print(getCurrentLineNumber());
                           widget.events.replace(event, newEvent);
                         });
                       },

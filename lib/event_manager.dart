@@ -312,10 +312,6 @@ class EventManager {
     update(dateTime);
     _db.insertEvent(newEvent);
   }
-
-  void save() {
-    // Sqflite()
-  }
 }
 
 class DatabaseHelper {

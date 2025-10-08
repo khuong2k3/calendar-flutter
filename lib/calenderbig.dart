@@ -10,23 +10,12 @@ import 'package:flutter_app/tooltip.dart';
 
 const int maxRender = 140;
 
-class Calenderbig extends StatefulWidget {
+class Calenderbig extends StatelessWidget {
   final EventManager events;
+  final DateTime startRender = startOfDay(DateTime.now());
+  final DateTime endRender = startOfDay(DateTime.now()).add(Duration(days: 100));
 
-  const Calenderbig({super.key, required this.events});
-
-  @override
-  State<Calenderbig> createState() => _CalendarBigState();
-}
-
-class _CalendarBigState extends State<Calenderbig> {
-  DateTime startRender = startOfDay(DateTime.now());
-  DateTime endRender = startOfDay(DateTime.now()).add(Duration(days: 100));
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  Calenderbig({super.key, required this.events});
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +40,7 @@ class _CalendarBigState extends State<Calenderbig> {
             child: CalenderGrid(
               startDate: startRender,
               endDate: endRender,
-              events: widget.events,
+              events: events,
             ),
           ),
         ],
@@ -93,7 +82,7 @@ class _CalenderGrid extends State<CalenderGrid> {
   void _onScroll() {
     if (controller.position.atEdge) {
       setState(() {
-        print(getCurrentLineNumber());
+         // print(getCurrentLineNumber());
         if (controller.offset == 0.0) {
           startRender = startRender.subtract(Duration(days: 7));
           if (endRender.difference(startRender) > Duration(days: maxRender)) {
@@ -110,15 +99,6 @@ class _CalenderGrid extends State<CalenderGrid> {
     }
 
     double newPosition = (controller.offset / _cellSize).round() * _cellSize;
-    // int index = (_prevPosition / _cellSize).round();
-    // double newPosition = 0.0;
-    // if (_prevPosition - controller.offset > 0.0) {
-    //   newPosition = (index + 1) * _cellSize;
-    // } else {
-    //   newPosition = (index - 1) * _cellSize;
-    // }
-    //
-    // _prevPosition = controller.offset;
 
     controller.jumpTo(max(0.001, newPosition));
   }
@@ -217,7 +197,7 @@ class _CalenderGrid extends State<CalenderGrid> {
           },
           onEdit: (event) {
             setState(() {
-              print(getCurrentLineNumber());
+              // print(getCurrentLineNumber());
               if (popupEvent.popupType == PopupType.addtag) {
                 globalPopupEventNotifier.value = PopupEvent(
                   event,
@@ -269,7 +249,7 @@ class _CalenderGrid extends State<CalenderGrid> {
           child: Sizedwidget(
             onSize: (size) {
               setState(() {
-                print(getCurrentLineNumber());
+                // print(getCurrentLineNumber());
                 scrollViewSize = size;
                 _cellSize = size.width / 7;
                 _updateDate();
@@ -279,7 +259,7 @@ class _CalenderGrid extends State<CalenderGrid> {
               controller: controller,
               physics: scrollPhysics,
               semanticChildCount: 100,
-              cacheExtent: 10000,
+              cacheExtent: 5000000,
               // primary: true,
               // addAutomaticKeepAlives: true,
               // shrinkWrap: true,
@@ -318,7 +298,6 @@ class DateItem extends StatefulWidget {
 }
 
 class _DateItem extends State<DateItem> {
-  late List<Event> _listEvents;
 
   @override
   void initState() {
@@ -327,7 +306,7 @@ class _DateItem extends State<DateItem> {
     widget.events.addListener((info) {
       if (info.date == null || (info.date != null && startOfDay(info.date as DateTime) == widget.date && mounted)) {
         setState(() {
-          print(getCurrentLineNumber());
+          // print(getCurrentLineNumber());
         });
       }
 
@@ -335,36 +314,21 @@ class _DateItem extends State<DateItem> {
     });
   }
 
-  Widget _createTag(BuildContext context, Event event) {
-    return InkWell(
-      onTap: () {
-        globalPopupEventNotifier.value = PopupEvent(event, PopupType.edittag);
-        widget.overlayCtl.toggle();
-      },
-      child: Container(
-        height: 20,
-        padding: EdgeInsets.only(left: 5, right: 5),
-        width: double.infinity,
-        decoration: BoxDecoration(color: Theme.of(context).hintColor),
-        child: Text(event.name),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     Color cardColor = Theme.of(context).primaryColor;
-    _listEvents = widget.events.getDate(widget.date);
+    List<Event> listEvents = widget.events.getDate(widget.date);
+
     List<Widget> tags = [];
 
-    for (int i = 0; i < min(_listEvents.length, widget.tagNum); i++) {
-      tags.add(_createTag(context, _listEvents[i]));
+    for (int i = 0; i < min(listEvents.length, widget.tagNum); i++) {
+      tags.add(EventTag(event: listEvents[i], overlayCtl: widget.overlayCtl));
     }
 
-    if (_listEvents.length == widget.tagNum + 1) {
-      tags.add(_createTag(context, _listEvents.last));
-    } else if (_listEvents.length > widget.tagNum + 1) {
-      tags.add(Text('${_listEvents.length - widget.tagNum}'));
+    if (listEvents.length == widget.tagNum + 1) {
+      tags.add(EventTag(event: listEvents.last, overlayCtl: widget.overlayCtl));
+    } else if (listEvents.length > widget.tagNum + 1) {
+      tags.add(Text('${listEvents.length - widget.tagNum}'));
     }
 
     if (widget.today == widget.date) {
@@ -389,37 +353,41 @@ class _DateItem extends State<DateItem> {
           );
           widget.overlayCtl.toggle();
         },
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('${widget.date.day}'),
-              Column(mainAxisSize: MainAxisSize.min, children: tags),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('${widget.date.day}'),
+            Column(mainAxisSize: MainAxisSize.min, children: tags),
+          ],
         ),
       ),
     );
   }
 }
 
-class EventTags extends StatelessWidget {
-  final List<Event> events;
+class EventTag extends StatelessWidget {
+  final Event event;
+  final OverlayPortalController overlayCtl;
 
-  const EventTags({super.key, required this.events});
+  const EventTag({super.key, required this.event, required this.overlayCtl});
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> tags = [];
-    if (events.isNotEmpty) {
-      tags.add(Text(events[0].name));
-    }
 
-    if (events.length > 1) {
-      tags.add(Text('+${events.length - 1}'));
-    }
-
-    return Row(children: tags);
+    return InkWell(
+      onTap: () {
+        globalPopupEventNotifier.value = PopupEvent(event, PopupType.edittag);
+        overlayCtl.toggle();
+      },
+      child: Container(
+        height: 20,
+        padding: EdgeInsets.only(left: 5, right: 5),
+        width: double.infinity,
+        decoration: BoxDecoration(color: Theme.of(context).hintColor),
+        child: Text(event.name),
+      ),
+    );
   }
 }
 
@@ -644,7 +612,7 @@ class _EditDetail extends State<EditDetail> {
                               value: isAllDay,
                               onChanged: (value) {
                                 setState(() {
-                                  print(getCurrentLineNumber());
+                                  // print(getCurrentLineNumber());
                                   isAllDay = value;
                                   if (value) {
                                     _event.start = startOfDay(_event.start);
@@ -697,7 +665,7 @@ class _EditDetail extends State<EditDetail> {
                               onChanged: (value) {
                                 if (value != null) {
                                   setState(() {
-                                    print(getCurrentLineNumber());
+                                    // print(getCurrentLineNumber());
                                     _event.repeat = value;
                                   });
                                 }
@@ -718,7 +686,7 @@ class _EditDetail extends State<EditDetail> {
                             TextButton(
                               onPressed: () {
                                 setState(() {
-                                  print(getCurrentLineNumber());
+                                  // print(getCurrentLineNumber());
                                   _event.reminders.remove(reminder);
                                 });
                               },
@@ -754,7 +722,7 @@ class _EditDetail extends State<EditDetail> {
                             }).toList(),
                         onSelected: (item) {
                           setState(() {
-                            print(getCurrentLineNumber());
+                            // print(getCurrentLineNumber());
                             _event.reminders.add(item as Reminder);
                           });
                           _controllerReminders.hide();
@@ -940,7 +908,7 @@ class _DropdownDateSelector extends State<DropdownDateSelector> {
             onPressed: () {
               if (widget.disabled == null || widget.disabled == true) {
                 setState(() {
-                  print(getCurrentLineNumber());
+                  // print(getCurrentLineNumber());
                   _open = !_open;
                 });
               }
@@ -1002,7 +970,7 @@ class _DateInput extends State<DateInput> {
 
   void _changeDate(DateTime date) {
     setState(() {
-      print(getCurrentLineNumber());
+      // print(getCurrentLineNumber());
       String newText = "${date.year}/${date.month}/${date.day}";
       _date = date;
       _controler.value = _controler.value.copyWith(
